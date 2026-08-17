@@ -207,15 +207,55 @@ isolated nodes and disconnection.
 
 ## Build
 
-Requires a C++17 compiler and CMake 3.16+. The first configure fetches Catch2, so
-it needs network access; later builds do not.
+Requires a C++17 compiler and CMake. The first configure fetches Catch2, so it needs
+network access; later builds do not.
+
+```bash
+cmake --preset debug          # or: release
+cmake --build --preset debug --parallel
+ctest --preset debug          # 72 tests, 1208 assertions
+./build/debug/evnet compare --network data/hume --demands data/hume/demands.csv
+```
+
+Presets need CMake 3.21+. Without them the plain form still works:
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-ctest --test-dir build --output-on-failure     # 71 tests, 1206 assertions
-./build/evnet compare --network data/hume --demands data/hume/demands.csv
+ctest --test-dir build --output-on-failure
 ```
+
+Three presets: `debug` (warnings as errors, for working), `release` (optimised —
+use it for the saturation sweep, which is slow otherwise), and `release-werror`
+(what CI builds, for checking a change is clean before pushing).
+
+### Developing in VS Code
+
+Open the folder and accept the recommended extensions. `CMakePresets.json` drives
+everything, so there is nothing to configure.
+
+**macOS prerequisites:** `xcode-select --install` for the compiler, then
+`brew install cmake`.
+
+| What | How |
+|---|---|
+| Build | `Cmd+Shift+B`, or pick a preset in the CMake sidebar |
+| Run all tests | Testing panel, or `Cmd+Shift+P` → *Run Test Task* |
+| Run one test | Click the ▷ beside any `TEST_CASE` — Catch2 registers each one by name |
+| Run the CLI | `Cmd+Shift+P` → *Run Task* → any of the eleven tasks |
+| Debug | `F5`, or *CMake: Debug* if you skip CodeLLDB |
+
+The tasks cover the whole workflow, not just building: compare planners under
+either engine, inspect a network, plan a single journey, rank siting candidates,
+export the time series, regenerate the datasets, run the sweep. Dataset and planner
+choices are prompted, so you do not have to remember the flags.
+
+Two things worth knowing. Tasks run from the repository root because the CLI
+resolves data paths relative to the working directory — running the binary from
+inside `build/` will fail to find `data/`. And breakpoints are most useful in
+`OptimalPlanner::solve` (`src/planner.cpp`) and `Simulator::run`
+(`src/simulator.cpp`), which are where the interesting decisions happen; the
+`[planner]` and `[simulator]` tags isolate the tests that exercise them.
 
 To regenerate the datasets from their raw sources:
 
