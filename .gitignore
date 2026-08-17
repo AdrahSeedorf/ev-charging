@@ -1,0 +1,31 @@
+# Build output
+# Note the trailing glob: a bare `build/` would not match `build-ci/`, and any
+# out-of-source build directory must be excluded, not just the conventional one.
+build*/
+out/
+cmake-build-*/
+_deps/
+*.o
+*.obj
+*.a
+*.exe
+
+# IDE and editor state
+.idea/
+.vscode/
+.vs/
+*.iml
+compile_commands.json
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Test scratch files
+tests/tmp_*
