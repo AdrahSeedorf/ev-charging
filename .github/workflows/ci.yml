@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} / ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        build_type: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DEVNET_WERROR=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Datasets regenerate reproducibly
+        run: |
+          python3 tools/build_datasets.py
+          git diff --exit-code -- data/ \
+            || (echo "::error::Generated data differs from committed data" && exit 1)
+
+      - name: Smoke-test the CLI
+        run: |
+          ./build/evnet inspect --network data/sydney
+          ./build/evnet compare --network data/hume --demands data/hume/demands.csv
+          ./build/evnet compare --network data/hume --demands data/hume/demands.csv --engine static
+          ./build/evnet compare --network data/hume --demands data/hume/demands.csv --format csv
+          ./build/evnet simulate --network data/hume --demands data/hume/demands.csv \
+            --planner optimal --timeseries /tmp/load.csv --trips /tmp/trips.csv
+          ./build/evnet site --network data/sydney --demands data/sydney/demands.csv --top 3
+          test -s /tmp/load.csv && test -s /tmp/trips.csv
