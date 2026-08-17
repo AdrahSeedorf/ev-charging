@@ -14,6 +14,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 option(EVNET_WERROR "Treat warnings as errors" OFF)
+option(EVNET_BUILD_TESTS "Build the test suite" ON)
 
 # The core is a library rather than a pile of headers. Both legacy projects put
 # every method body in a header, which compiled only because each had a single
@@ -41,6 +42,11 @@ else()
     if(EVNET_WERROR)
         target_compile_options(evnet_core PRIVATE -Werror)
     endif()
+endif()
+
+if(EVNET_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 # Convenience: regenerate the datasets from their raw sources.
