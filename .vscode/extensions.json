@@ -1,0 +1,9 @@
+{
+  "// note": "Suggested when the folder is opened. Nothing here is mandatory: the project builds from a terminal with cmake and ctest alone.",
+  "recommendations": [
+    "ms-vscode.cmake-tools",
+    "ms-vscode.cpptools",
+    "vadimcn.vscode-lldb",
+    "ms-python.python"
+  ]
+}

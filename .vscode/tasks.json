@@ -1,0 +1,126 @@
+{
+  "version": "2.0.0",
+  "// note": "Every task runs from the repository root, because the CLI resolves data paths relative to the working directory.",
+  "options": { "cwd": "${workspaceFolder}" },
+  "tasks": [
+    {
+      "label": "Build (Debug)",
+      "detail": "Configure if needed and compile everything, warnings as errors.",
+      "type": "shell",
+      "command": "cmake --build --preset debug --parallel",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Build (Release)",
+      "detail": "Optimised build. Needed before the saturation sweep, which is slow otherwise.",
+      "type": "shell",
+      "command": "cmake --build --preset release --parallel",
+      "group": "build",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Run all tests",
+      "detail": "72 test cases via ctest.",
+      "type": "shell",
+      "command": "ctest --preset debug",
+      "dependsOn": "Build (Debug)",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run tests matching a tag",
+      "detail": "Catch2 tags: [router] [network] [policy] [simulation] [siting] [runtime] [simulator] [planner] [data]",
+      "type": "shell",
+      "command": "./build/debug/tests/evnet_tests '${input:catchTag}'",
+      "dependsOn": "Build (Debug)",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Compare planners (Hume, event-driven)",
+      "detail": "The headline result: five planners over the corridor with a real clock.",
+      "type": "shell",
+      "command": "./build/debug/evnet compare --network data/hume --demands data/hume/demands.csv",
+      "dependsOn": "Build (Debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Compare planners (Hume, static engine)",
+      "detail": "Stage 1's timeless model, for contrast. Its waits are inflated by design.",
+      "type": "shell",
+      "command": "./build/debug/evnet compare --network data/hume --demands data/hume/demands.csv --engine static",
+      "dependsOn": "Build (Debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Inspect a network",
+      "detail": "Summarise nodes, stations and edges, and report structural warnings.",
+      "type": "shell",
+      "command": "./build/debug/evnet inspect --network data/${input:dataset}",
+      "dependsOn": "Build (Debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Plan one journey",
+      "detail": "Sydney to Melbourne on a 67 kWh battery, with the planner you choose.",
+      "type": "shell",
+      "command": "./build/debug/evnet route --network data/hume --from Sydney --to Melbourne --battery 67 --soc 56 --planner ${input:planner}",
+      "dependsOn": "Build (Debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Recommend a new station site (Sydney)",
+      "detail": "Ranks the eight station-less suburbs by their effect on the whole fleet.",
+      "type": "shell",
+      "command": "./build/debug/evnet site --network data/sydney --demands data/sydney/demands.csv --top 5",
+      "dependsOn": "Build (Debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Export time series and trips",
+      "detail": "Writes per-station occupancy over time and per-trip records to out/.",
+      "type": "shell",
+      "command": "mkdir -p out && ./build/debug/evnet simulate --network data/hume --demands data/hume/demands.csv --planner optimal --timeseries out/load.csv --trips out/trips.csv",
+      "dependsOn": "Build (Debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Regenerate datasets from raw sources",
+      "detail": "Re-runs the converter. Output should be byte-identical unless the converter changed.",
+      "type": "shell",
+      "command": "python3 tools/build_datasets.py",
+      "problemMatcher": []
+    },
+    {
+      "label": "Saturation sweep (slow, needs Release)",
+      "detail": "Scales the fleet to 6,400 vehicles to find where congestion starts to matter.",
+      "type": "shell",
+      "command": "cmake --build --preset release --parallel && python3 tools/saturation_sweep.py --out out/sweep.csv",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "dataset",
+      "type": "pickString",
+      "description": "Which network?",
+      "options": ["sydney", "hume"],
+      "default": "sydney"
+    },
+    {
+      "id": "planner",
+      "type": "pickString",
+      "description": "Which planner?",
+      "options": ["farthest", "cheapest", "min-wait", "generalised", "optimal"],
+      "default": "optimal"
+    },
+    {
+      "id": "catchTag",
+      "type": "pickString",
+      "description": "Which Catch2 tag?",
+      "options": ["[router]", "[network]", "[policy]", "[simulation]", "[siting]", "[runtime]", "[simulator]", "[planner]", "[data]"],
+      "default": "[simulator]"
+    }
+  ]
+}

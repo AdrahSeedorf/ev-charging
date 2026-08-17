@@ -14,6 +14,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 option(EVNET_WERROR "Treat warnings as errors" OFF)
+
+# Emit compile_commands.json unconditionally: clangd, VS Code's C++ extension and
+# clang-tidy all read it, so IntelliSense works without anyone hand-maintaining an
+# include path.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(EVNET_BUILD_TESTS "Build the test suite" ON)
 
 # The core is a library rather than a pile of headers. Both legacy projects put

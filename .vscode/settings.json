@@ -1,0 +1,23 @@
+{
+  "// note": "Shared workspace settings. CMake Tools reads CMakePresets.json, so build configuration lives there rather than being duplicated here.",
+
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": true,
+  "cmake.sourceDirectory": "${workspaceFolder}",
+
+  "// intellisense": "Point the C++ extension at the compile database the presets generate, so headers resolve without hand-maintaining an include path.",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/debug/compile_commands.json",
+  "C_Cpp.default.cppStandard": "c++17",
+
+  "// testing": "CMake Tools surfaces ctest in the Testing panel. Catch2 registers each TEST_CASE individually via catch_discover_tests, so they appear by name.",
+  "cmake.ctest.allowParallelJobs": true,
+
+  "files.associations": { "*.hpp": "cpp", "*.cpp": "cpp" },
+  "files.exclude": { "**/build": true },
+  "search.exclude": { "**/build": true },
+
+  "editor.rulers": [90],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "[python]": { "editor.rulers": [88] }
+}

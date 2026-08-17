@@ -12,10 +12,18 @@ _deps/
 
 # IDE and editor state
 .idea/
-.vscode/
 .vs/
 *.iml
 compile_commands.json
+
+# VS Code: the shared workspace configuration IS committed, because a repo that
+# builds and runs the moment it is opened is worth more than a tidy ignore file.
+# Anything else VS Code drops in here is personal and stays out.
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 
 # OS noise
 .DS_Store
@@ -29,3 +37,6 @@ venv/
 
 # Test scratch files
 tests/tmp_*
+
+# Exports written by the CLI and the analysis tools
+out/

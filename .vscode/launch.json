@@ -1,0 +1,58 @@
+{
+  "version": "0.2.0",
+  "// note": "Uses CodeLLDB, which is more reliable than lldb-mi on Apple Silicon. If you would rather not install it, CMake Tools' own 'CMake: Debug' command works with no launch configuration at all.",
+  "configurations": [
+    {
+      "name": "Debug the test suite",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/tests/evnet_tests",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build (Debug)"
+    },
+    {
+      "name": "Debug one test case (prompts for a tag)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/tests/evnet_tests",
+      "args": ["${input:catchFilter}", "--break"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build (Debug)"
+    },
+    {
+      "name": "Debug the CLI: compare (Hume)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/evnet",
+      "args": ["compare", "--network", "data/hume", "--demands", "data/hume/demands.csv"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build (Debug)"
+    },
+    {
+      "name": "Debug the CLI: siting (Sydney)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/evnet",
+      "args": ["site", "--network", "data/sydney", "--demands", "data/sydney/demands.csv", "--top", "5"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build (Debug)"
+    },
+    {
+      "name": "Debug whatever CMake Tools has selected",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "catchFilter",
+      "type": "promptString",
+      "description": "Catch2 filter: a tag like [planner] or a quoted test name",
+      "default": "[planner]"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "EVNET_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "inherits": "base",
+      "displayName": "Debug",
+      "description": "Assertions on, debug symbols, warnings as errors. Use this while working.",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EVNET_WERROR": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "displayName": "Release",
+      "description": "Optimised. Use this for the saturation sweep, which runs thousands of vehicles.",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EVNET_WERROR": "OFF"
+      }
+    },
+    {
+      "name": "release-werror",
+      "inherits": "release",
+      "displayName": "Release (warnings as errors)",
+      "description": "What CI builds. Use it to confirm a change is clean before pushing.",
+      "cacheVariables": { "EVNET_WERROR": "ON" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "debug", "configurePreset": "debug", "displayName": "Debug" },
+    { "name": "release", "configurePreset": "release", "displayName": "Release" },
+    { "name": "release-werror", "configurePreset": "release-werror", "displayName": "Release (warnings as errors)" }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "displayName": "Debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error", "stopOnFailure": false }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "displayName": "Release",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error", "stopOnFailure": false }
+    }
+  ]
+}
