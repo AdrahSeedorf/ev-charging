@@ -20,6 +20,7 @@ option(EVNET_WERROR "Treat warnings as errors" OFF)
 # translation unit -- adding a second .cpp that included them would have produced
 # duplicate-symbol link errors.
 add_library(evnet_core STATIC
+        src/candidates.cpp
         src/csv.cpp
         src/network.cpp
         src/policy.cpp
