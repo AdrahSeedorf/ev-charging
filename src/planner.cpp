@@ -160,8 +160,19 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
         for (const auto& edge : network_->neighbours(static_cast<NodeId>(node))) {
             const Kwh burn = energyForDistance(edge.distanceKm, vehicle.efficiency);
             const auto burnLevels = static_cast<std::size_t>(std::ceil(burn / step));
-            if (burnLevels > level || level - burnLevels < reserveLevel) continue;
+            if (burnLevels > level) continue;
             const std::size_t remaining = level - burnLevels;
+
+            // The reserve exists so a vehicle is never stranded between chargers, so
+            // it is required on arrival at a plain waypoint but not at a station --
+            // rolling into a charger nearly empty is the entire point of the charger.
+            //
+            // Applying it everywhere made this planner reject journeys the greedy
+            // planners happily completed, which meant the two were being compared on
+            // different feasibility problems rather than on their decisions.
+            const std::size_t floorLevel =
+                network_->node(edge.to).hasStation() ? 0u : reserveLevel;
+            if (remaining < floorLevel) continue;
 
             const Dollars added = edge.distanceKm * config_.travelCostPerKm +
                                   drivingTime(edge.distanceKm, config_.speedKmh) * valueOfTime_;

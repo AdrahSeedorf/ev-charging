@@ -271,3 +271,27 @@ TEST_CASE("the time series samples every station across the window", "[simulator
     CHECK(sampleTimeSeries(network, runtime, 1.0, 0.0).empty());
 }
 
+TEST_CASE("the optimal planner may arrive at a charger below its reserve", "[planner]") {
+    // The reserve exists to stop a vehicle being stranded BETWEEN chargers, so it must
+    // not be demanded on arrival AT one -- rolling in nearly empty is what the charger
+    // is for. Enforcing it everywhere made this planner reject journeys the greedy
+    // planners completed, which meant the two were being compared on different
+    // feasibility problems rather than on the quality of their decisions.
+    const Network network = testing::corridor();
+    const Router router(network);
+    const SimulatorConfig config = fastConfig();
+    const Simulator simulator(network, router, config);
+
+    Demand demand = testing::corridorJourney();
+    demand.batteryKwh = 40.0;  // 222 km on a full charge, 200 km once the reserve is held
+    demand.socKwh = 20.0;      // 111 km: reaches Mid1 with ~2 kWh, under the 4 kWh
+                               // reserve but standing at a charger
+
+    auto optimal = makePlanner("optimal", network, router, config.valueOfTimePerHour,
+                               config.feasibility());
+    StationRuntime runtime(network);
+    const auto trips = simulator.run({demand}, *optimal, runtime);
+
+    CHECK(trips[0].completed);
+    CHECK_FALSE(trips[0].stops.empty());
+}
