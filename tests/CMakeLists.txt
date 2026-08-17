@@ -15,7 +15,9 @@ add_executable(evnet_tests
         test_policy.cpp
         test_router.cpp
         test_simulation.cpp
-        test_siting.cpp)
+        test_simulator.cpp
+        test_siting.cpp
+        test_station_runtime.cpp)
 
 target_link_libraries(evnet_tests PRIVATE evnet_core Catch2::Catch2WithMain)
 
