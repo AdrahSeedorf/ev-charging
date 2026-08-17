@@ -21,7 +21,8 @@ option(EVNET_WERROR "Treat warnings as errors" OFF)
 # duplicate-symbol link errors.
 add_library(evnet_core STATIC
         src/csv.cpp
-        src/network.cpp)
+        src/network.cpp
+        src/router.cpp)
 
 target_include_directories(evnet_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
