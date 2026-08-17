@@ -15,10 +15,10 @@
       "name": "debug",
       "inherits": "base",
       "displayName": "Debug",
-      "description": "Assertions on, debug symbols, warnings as errors. Use this while working.",
+      "description": "Assertions on, debug symbols, warnings visible but not fatal. Use this while working.",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "EVNET_WERROR": "ON"
+        "EVNET_WERROR": "OFF"
       }
     },
     {
@@ -35,7 +35,7 @@
       "name": "release-werror",
       "inherits": "release",
       "displayName": "Release (warnings as errors)",
-      "description": "What CI builds. Use it to confirm a change is clean before pushing.",
+      "description": "What CI builds: warnings are fatal. Run this before pushing.",
       "cacheVariables": { "EVNET_WERROR": "ON" }
     }
   ],

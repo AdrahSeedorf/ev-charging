@@ -225,9 +225,13 @@ cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
-Three presets: `debug` (warnings as errors, for working), `release` (optimised —
-use it for the saturation sweep, which is slow otherwise), and `release-werror`
-(what CI builds, for checking a change is clean before pushing).
+Three presets: `debug` for working, `release` for the saturation sweep (slow
+otherwise), and `release-werror` for what CI builds — warnings fatal, run it before
+pushing.
+
+Warnings are visible in `debug` but not fatal. That is deliberate: `-Werror` in the
+everyday build means a compiler upgrade can stop you working over something
+cosmetic. CI enforces it instead, across GCC, Clang and Apple Clang.
 
 ### Developing in VS Code
 

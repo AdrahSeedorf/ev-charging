@@ -7,6 +7,24 @@ on:
   workflow_dispatch:
 
 jobs:
+  # A second compiler, because GCC and Clang disagree about what is worth warning
+  # about. Clang caught a C++20-only lambda capture and an unused constant that GCC
+  # accepted in silence.
+  clang:
+    name: ubuntu / clang / Debug
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DEVNET_WERROR=ON
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
   build-and-test:
     name: ${{ matrix.os }} / ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
