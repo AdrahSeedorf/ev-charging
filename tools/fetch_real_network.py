@@ -20,12 +20,13 @@ toolkit reads, so nothing downstream changes.
     python3 tools/fetch_real_network.py --offline-fixture tests/fixtures/overpass_sample.json \\
         --name fixture --out /tmp/fixture
 
-NOTE ON ETIQUETTE. Both services are volunteer-run and rate-limited. This script
-makes one Overpass call and one OSRM call per run, caches both to disk, and will not
-re-request while a cache file exists. Do not remove that behaviour to "get fresher
-data" -- an unthrottled loop against Overpass is how a client gets banned. The public
-OSRM demo server also caps a table request at roughly 100 coordinates, so
-`--max-stations` defaults below that; a larger study wants a self-hosted OSRM.
+NOTE ON ETIQUETTE. Both services are volunteer-run and rate-limited. Overpass is
+called once per run. OSRM limits a request by coordinate count, so its distance matrix
+is assembled from tiles of 45x45 with a second's pause between them -- 36 requests for
+a 238-station network. Every response is cached, and nothing is re-requested while a
+cache file exists. Do not remove that behaviour to "get fresher data": an unthrottled
+loop against either service is how a client gets banned. A study substantially larger
+than a city wants a self-hosted OSRM.
 """
 
 from __future__ import annotations
@@ -43,7 +44,18 @@ import urllib.request
 from pathlib import Path
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-OSRM_TABLE_URL = "https://router.project-osrm.org/table/v1/driving/"
+# Tried in order. FOSSGIS's instance is the better-maintained of the two; the
+# project-osrm demo host is kept as a fallback because it is the one most
+# documentation points at, but it has been known to fail its TLS handshake outright.
+OSRM_ENDPOINTS = [
+    ("FOSSGIS", "https://routing.openstreetmap.de/routed-car/table/v1/driving/"),
+    ("project-osrm demo", "https://router.project-osrm.org/table/v1/driving/"),
+]
+
+# Coordinates permitted in a single table request. The public instances cap this near
+# 100, so a request is built from two blocks of this size at most.
+OSRM_BLOCK = 45
+OSRM_MIN_INTERVAL = 1.1  # seconds; both hosts ask for no more than 1 request/second
 USER_AGENT = "ev-network-toolkit/0.1 (+https://github.com/; research use, one request per run)"
 
 EFFICIENCY_KWH_PER_100KM = 18.0
@@ -201,8 +213,9 @@ def extract_stations(payload: dict, max_stations: int, seed: int) -> list[dict]:
     if len(stations) > max_stations:
         # Deterministic thinning, and SAID OUT LOUD -- a silent cap would make the
         # study look complete when it is a sample.
-        print(f"  note: {len(stations)} stations found, sampling {max_stations} "
-              f"(OSRM's public table endpoint caps a request at about 100 coordinates)")
+        print(f"  note: {len(stations)} stations found, sampling {max_stations}. "
+              f"Raise --max-stations to keep more (routing is tiled, so the cost is "
+              f"roughly one second per 45x45 block).")
         random.Random(seed).shuffle(stations)
         stations = stations[:max_stations]
         stations.sort(key=lambda s: (s["lat"], s["lon"]))
@@ -217,17 +230,99 @@ def extract_stations(payload: dict, max_stations: int, seed: int) -> list[dict]:
 # --------------------------------------------------------------------------
 
 
-def fetch_road_distances(stations: list[dict], cache: Path) -> list[list[float]]:
-    coords = ";".join(f"{s['lon']:.6f},{s['lat']:.6f}" for s in stations)
-    url = OSRM_TABLE_URL + coords + "?annotations=distance"
-    payload = fetch(url, None, cache, "OSRM distance table")
+def osrm_tile(base: str, stations: list[dict], rows: list[int],
+              cols: list[int]) -> list[list[float | None]]:
+    """One sub-matrix: road distances from every station in `rows` to every one in `cols`.
+
+    Only the coordinates involved are sent, because the public instances limit a
+    request by coordinate count rather than by matrix size.
+    """
+    indices = list(dict.fromkeys(rows + cols))  # dedup, order preserved
+    position = {node: i for i, node in enumerate(indices)}
+    coords = ";".join(f"{stations[i]['lon']:.6f},{stations[i]['lat']:.6f}" for i in indices)
+    query = urllib.parse.urlencode({
+        "annotations": "distance",
+        "sources": ";".join(str(position[r]) for r in rows),
+        "destinations": ";".join(str(position[c]) for c in cols),
+    })
+
+    request = urllib.request.Request(f"{base}{coords}?{query}", headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=180) as response:
+        payload = json.loads(response.read().decode())
     if payload.get("code") != "Ok":
-        raise SystemExit(f"error: OSRM replied {payload.get('code')}: {payload.get('message')}")
-    matrix = payload.get("distances")
-    if not matrix:
-        raise SystemExit("error: OSRM returned no distance matrix")
-    return [[(None if value is None else float(value) / 1000.0) for value in row]
-            for row in matrix]
+        raise RuntimeError(f"OSRM replied {payload.get('code')}: {payload.get('message')}")
+    distances = payload.get("distances")
+    if not distances:
+        raise RuntimeError("OSRM returned no distance matrix")
+    return [[(None if v is None else float(v) / 1000.0) for v in row] for row in distances]
+
+
+def fetch_road_distances(stations: list[dict], cache: Path) -> list[list[float | None]]:
+    """Full road distance matrix, assembled from tiled requests.
+
+    Tiling rather than sampling. An earlier version capped the station count to fit a
+    single request, which on Greater Sydney meant discarding 148 of 238 real stations
+    -- most of the data, thrown away to avoid a second HTTP call. Blocks of 45 keep
+    every request inside the coordinate limit, and a 238-station network needs 36 of
+    them, which at one per second is under a minute.
+    """
+    if cache.exists():
+        print(f"  OSRM: using cached {cache}")
+        return json.loads(cache.read_text())
+
+    count = len(stations)
+    blocks = [list(range(i, min(i + OSRM_BLOCK, count))) for i in range(0, count, OSRM_BLOCK)]
+    tiles = [(r, c) for r in blocks for c in blocks]
+
+    # Settle on an endpoint using the first tile, so a dead host costs one request.
+    base = None
+    first = None
+    problems = []
+    for label, candidate in OSRM_ENDPOINTS:
+        try:
+            print(f"  OSRM: trying {label}")
+            first = osrm_tile(candidate, stations, tiles[0][0], tiles[0][1])
+            base = candidate
+            print(f"  OSRM: using {label}, {len(tiles)} tile request(s) to make")
+            break
+        except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, OSError) as error:
+            reason = getattr(error, "reason", error)
+            print(f"  OSRM: {label} unavailable ({reason})")
+            problems.append(f"{label}: {reason}")
+
+    if base is None:
+        raise SystemExit(
+            "error: no OSRM endpoint could be reached.\n  "
+            + "\n  ".join(problems)
+            + "\n\n  Re-run with --no-osrm to estimate distances from geometry instead."
+            "\n  Straight-line distance times 1.35 is a reasonable stand-in, and the"
+            "\n  output records that the edges are estimated rather than measured."
+        )
+
+    matrix: list[list[float | None]] = [[None] * count for _ in range(count)]
+
+    def store(rows, cols, tile):
+        for i, r in enumerate(rows):
+            for j, c in enumerate(cols):
+                matrix[r][c] = tile[i][j]
+
+    store(tiles[0][0], tiles[0][1], first)
+    for number, (rows, cols) in enumerate(tiles[1:], start=2):
+        time.sleep(OSRM_MIN_INTERVAL)
+        print(f"  OSRM: tile {number}/{len(tiles)}", end="\r", flush=True)
+        try:
+            store(rows, cols, osrm_tile(base, stations, rows, cols))
+        except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, OSError) as error:
+            # A tile that fails leaves its pairs as None, and build_edges falls back to
+            # geometry for those. Better a partly-measured matrix than none at all.
+            print(f"\n  OSRM: tile {number} failed ({getattr(error, 'reason', error)}); "
+                  f"those pairs fall back to geometry")
+    print(f"  OSRM: {len(tiles)} tile(s) done" + " " * 20)
+
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps(matrix))
+    print(f"  OSRM: cached to {cache}")
+    return matrix
 
 
 def great_circle_km(a: dict, b: dict) -> float:
@@ -392,8 +487,9 @@ def main() -> int:
     parser.add_argument("--out", type=Path, required=True, help="output directory")
     parser.add_argument("--cache", type=Path, default=Path(".cache"),
                         help="where fetched responses are kept [.cache]")
-    parser.add_argument("--max-stations", type=int, default=90,
-                        help="cap, below OSRM's public table limit [90]")
+    parser.add_argument("--max-stations", type=int, default=250,
+                        help="cap on stations; requests are tiled, so this is about "
+                             "runtime rather than any API limit [250]")
     parser.add_argument("--neighbours", type=int, default=4,
                         help="edges kept per station, nearest first [4]")
     parser.add_argument("--demands", type=int, default=400)
@@ -443,6 +539,8 @@ def main() -> int:
     if not args.no_osrm and not args.offline_fixture:
         time.sleep(1.0)  # be a polite client between the two services
         matrix = fetch_road_distances(stations, args.cache / f"{args.name}-osrm.json")
+        measured = sum(1 for row in matrix for value in row if value is not None)
+        print(f"  road distances: {measured} of {len(stations) ** 2} pairs measured")
     else:
         print("  road distances: estimated from geometry (no routing requested)")
 

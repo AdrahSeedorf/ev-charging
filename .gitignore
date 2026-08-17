@@ -41,6 +41,10 @@ tests/tmp_*
 # Exports written by the CLI and the analysis tools
 out/
 
+# Cached Overpass and OSRM responses. Keep them locally -- they save the volunteer
+# servers a request -- but they are fetched data, not source.
+.cache/
+
 # The committed maps are the SVGs, which GitHub renders inline in the README.
 # The interactive HTML is regenerable and large, so it stays out.
 docs/*.html
