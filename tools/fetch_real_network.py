@@ -12,8 +12,8 @@ ones. Two sources, both free and neither needing a key:
 Output is the same nodes.csv / edges.csv / demands.csv schema the rest of the
 toolkit reads, so nothing downstream changes.
 
-    # Greater Sydney
-    python3 tools/fetch_real_network.py --bbox -34.15,150.60,-33.55,151.35 \\
+    # Greater Sydney. Note the space-separated bounding box: south west north east.
+    python3 tools/fetch_real_network.py --bbox -34.15 150.60 -33.55 151.35 \\
         --name sydney-real --out data/sydney-real
 
     # Rehearse without touching the network, using the bundled fixture
@@ -376,7 +376,16 @@ def write_csv(path: Path, rows: list[dict], comment: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--bbox", help="south,west,north,east in decimal degrees")
+    # nargs="+" rather than a single value, because a bounding box in the southern or
+    # western hemisphere begins with a minus sign, and argparse reads a lone
+    # "-34.15,150.6,..." as an option flag rather than a value. Space-separated numbers
+    # each match argparse's negative-number rule, so they survive; the tokens are then
+    # rejoined and split on commas, which makes both spellings work:
+    #     --bbox -34.15 150.60 -33.55 151.35
+    #     --bbox=-34.15,150.60,-33.55,151.35
+    parser.add_argument("--bbox", nargs="+", metavar="COORD",
+                        help="south west north east, in decimal degrees "
+                             "(space- or comma-separated)")
     parser.add_argument("--offline-fixture", type=Path, default=None,
                         help="use a saved Overpass response instead of calling out")
     parser.add_argument("--name", required=True, help="dataset name, used in filenames")
@@ -398,13 +407,33 @@ def main() -> int:
     if not args.bbox and not args.offline_fixture:
         parser.error("one of --bbox or --offline-fixture is required")
 
+    bbox = None
+    if args.bbox:
+        parts = [t for token in args.bbox for t in str(token).split(",") if t.strip()]
+        if len(parts) != 4:
+            parser.error(f"--bbox needs 4 numbers (south west north east), got {len(parts)}: "
+                         f"{' '.join(parts)}")
+        try:
+            south, west, north, east = (float(v) for v in parts)
+        except ValueError:
+            parser.error(f"--bbox values must be numbers, got: {' '.join(parts)}")
+        if not (-90 <= south < north <= 90):
+            parser.error(f"--bbox latitudes must satisfy -90 <= south < north <= 90, "
+                         f"got south={south} north={north}")
+        if not (-180 <= west < east <= 180):
+            parser.error(f"--bbox longitudes must satisfy -180 <= west < east <= 180, "
+                         f"got west={west} east={east}")
+        # Overpass wants south,west,north,east in exactly this order.
+        bbox = f"{south},{west},{north},{east}"
+
     print(f"Building '{args.name}'")
     if args.offline_fixture:
         print(f"  Overpass: reading fixture {args.offline_fixture}")
         payload = json.loads(args.offline_fixture.read_text())
     else:
+        print(f"  Overpass: bbox south,west,north,east = {bbox}")
         payload = fetch(OVERPASS_URL,
-                        urllib.parse.urlencode({"data": overpass_query(args.bbox)}).encode(),
+                        urllib.parse.urlencode({"data": overpass_query(bbox)}).encode(),
                         args.cache / f"{args.name}-overpass.json", "Overpass")
 
     stations = extract_stations(payload, args.max_stations, args.seed)
@@ -436,7 +465,7 @@ def main() -> int:
         "osm_id": s["osm_id"], "operator": s["operator"],
     } for s in stations]
 
-    source = "an Overpass fixture" if args.offline_fixture else f"OpenStreetMap, bbox {args.bbox}"
+    source = "an Overpass fixture" if args.offline_fixture else f"OpenStreetMap, bbox {bbox}"
     routing = "OSRM driving distances" if matrix else "great-circle distance x 1.35"
     write_csv(args.out / "nodes.csv", nodes,
               f"Charging stations from {source}. Chargers and power are OSM tags; "

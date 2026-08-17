@@ -292,7 +292,7 @@ surveyed ones:
 
 ```bash
 # Charging stations from OpenStreetMap, road distances from OSRM
-python3 tools/fetch_real_network.py --bbox -34.15,150.60,-33.55,151.35 \
+python3 tools/fetch_real_network.py --bbox -34.15 150.60 -33.55 151.35 \
     --name sydney-real --out data/sydney-real
 
 ./build/debug/evnet inspect --network data/sydney-real      # validator runs on it too
@@ -300,6 +300,11 @@ python3 tools/fetch_real_network.py --bbox -34.15,150.60,-33.55,151.35 \
     --demands data/sydney-real/demands.csv
 python3 tools/render_map.py --network data/sydney-real --out docs --name sydney-real
 ```
+
+The bounding box is `south west north east`. Space-separated as above, or
+`--bbox=-34.15,150.60,-33.55,151.35` with an equals sign — a bare
+`--bbox -34.15,...` cannot work, because argparse reads a leading minus as an option
+flag.
 
 Neither service needs a key, and both are volunteer-run: the script makes exactly one
 call to each, caches the responses, and will not re-request while a cache file exists.
