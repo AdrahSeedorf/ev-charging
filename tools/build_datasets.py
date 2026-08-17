@@ -42,6 +42,61 @@ DATA = ROOT / "data"
 EFFICIENCY_KWH_PER_100KM = 18.0
 
 
+
+# --------------------------------------------------------------------------
+# Coordinates
+# --------------------------------------------------------------------------
+
+# Approximate centres of each place, in decimal degrees. These serve two purposes:
+# drawing a map, and giving the validator a physical lower bound to check the
+# inherited road distances against -- no road is shorter than the line it spans.
+#
+# They are suburb and town CENTRES, so they carry an error of a kilometre or so.
+# That is fine for the map and fine for catching gross errors, but it means a
+# marginally-failing edge may be the coordinate's fault rather than the distance's.
+# tools/fetch_real_network.py replaces these with surveyed positions.
+SYDNEY_COORDS = {
+    "Penrith":        (-33.7507, 150.6877),
+    "St Marys":       (-33.7686, 150.7746),
+    "Box Hill":       (-33.6437, 150.8869),
+    "Kellyville":     (-33.7108, 150.9560),
+    "Castle Hill":    (-33.7320, 151.0050),
+    "Blacktown":      (-33.7688, 150.9060),
+    "Parramatta":     (-33.8150, 151.0000),
+    "Olympic Park":   (-33.8470, 151.0630),
+    "Burwood":        (-33.8770, 151.1040),
+    "Randwick":       (-33.9140, 151.2410),
+    "Bondi Junction": (-33.8915, 151.2500),
+    "Manly":          (-33.7969, 151.2874),
+    "Chatswood":      (-33.7969, 151.1832),
+    "Macquarie Pk":   (-33.7770, 151.1200),
+    "Hornsby":        (-33.7040, 151.0990),
+    "Central":        (-33.8830, 151.2060),
+    "Hurstville":     (-33.9670, 151.1020),
+    "Bankstown":      (-33.9180, 151.0350),
+    "Liverpool":      (-33.9200, 150.9230),
+    "Leppington":     (-33.9600, 150.8000),
+    "Campbelltown":   (-34.0650, 150.8140),
+    "Ryde":           (-33.8150, 151.1030),
+    "Strathfield":    (-33.8750, 151.0930),
+    "Fairfield":      (-33.8720, 150.9560),
+}
+
+HUME_COORDS = {
+    "Sydney":       (-33.8688, 151.2093),
+    "Campbelltown": (-34.0650, 150.8140),
+    "Mittagong":    (-34.4500, 150.4500),
+    "Goulburn":     (-34.7550, 149.7180),
+    "Yass":         (-34.8400, 148.9100),
+    "Gundagai":     (-35.0660, 148.1060),
+    "Holbrook":     (-35.7250, 147.3130),
+    "Albury":       (-36.0737, 146.9135),
+    "Wangaratta":   (-36.3580, 146.3120),
+    "Euroa":        (-36.7520, 145.5700),
+    "Wallan":       (-37.4160, 144.9800),
+    "Melbourne":    (-37.8136, 144.9631),
+}
+
 # --------------------------------------------------------------------------
 # Departure times
 # --------------------------------------------------------------------------
@@ -169,6 +224,8 @@ def build_sydney():
                 "price_per_kwh": f"{max(prices[i], 0.0):.2f}" if has_station[i] else "0.00",
                 "chargers": chargers if has_station[i] else 0,
                 "power_kw": f"{power:.1f}" if has_station[i] else "0.0",
+                "latitude": f"{SYDNEY_COORDS[name][0]:.4f}",
+                "longitude": f"{SYDNEY_COORDS[name][1]:.4f}",
             }
         )
 
@@ -249,6 +306,8 @@ def build_hume():
                 "price_per_kwh": f"{price:.2f}",
                 "chargers": chargers,
                 "power_kw": f"{HUME_POWER_KW:.1f}",
+                "latitude": f"{HUME_COORDS[name][0]:.4f}",
+                "longitude": f"{HUME_COORDS[name][1]:.4f}",
             }
         )
         if i > 0:

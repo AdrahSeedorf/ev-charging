@@ -2,12 +2,21 @@
 
 #include <algorithm>
 #include <deque>
+#include <iomanip>
+#include <sstream>
 #include <set>
 #include <stdexcept>
 
 #include "evnet/csv.hpp"
 
 namespace evnet {
+namespace {
+
+/// Above this, a road is indirect enough to be worth a second look. City streets run
+/// about 1.3-1.6 and highways about 1.1-1.4, so this sits well clear of normal.
+constexpr double kImplausibleDetourRatio = 4.0;
+
+}  // namespace
 
 Network Network::load(const std::string& nodesCsvPath, const std::string& edgesCsvPath) {
     Network network;
@@ -35,6 +44,19 @@ Network Network::load(const std::string& nodesCsvPath, const std::string& edgesC
                 throw std::runtime_error("network: negative price at '" + node.name + "'");
             }
             node.station = station;
+        }
+        // Coordinates are optional so that networks built in code, and the schema as
+        // it stood before stage 3, both still load.
+        if (row.has("latitude") && row.has("longitude")) {
+            Coordinate location;
+            location.latitude = row.number("latitude");
+            location.longitude = row.number("longitude");
+            if (location.latitude < -90.0 || location.latitude > 90.0 ||
+                location.longitude < -180.0 || location.longitude > 180.0) {
+                throw std::runtime_error("network: '" + node.name +
+                                         "' has coordinates outside the valid range");
+            }
+            node.location = location;
         }
         parsed.push_back(std::move(node));
     }
@@ -134,6 +156,13 @@ std::vector<NodeId> Network::candidateSites() const {
     return out;
 }
 
+std::optional<Km> Network::straightLineKm(NodeId a, NodeId b) const {
+    const Node& from = node(a);
+    const Node& to = node(b);
+    if (!from.hasLocation() || !to.hasLocation()) return std::nullopt;
+    return greatCircleKm(*from.location, *to.location);
+}
+
 std::vector<std::string> Network::validate() const {
     std::vector<std::string> warnings;
     if (nodes_.empty()) {
@@ -158,6 +187,39 @@ std::vector<std::string> Network::validate() const {
         }
         if (node.hasStation() && node.station->powerKw <= 0.0) {
             warnings.push_back("'" + node.name + "' has a station with no charging power");
+        }
+    }
+
+    // Geometry, where coordinates allow it. A road cannot be shorter than the
+    // straight line it spans, so an edge below its great-circle distance is
+    // impossible rather than merely odd -- a check with no threshold to tune.
+    //
+    // Note the deliberate asymmetry in how the two findings are worded. Falling below
+    // the lower bound is a statement about physics. A high detour ratio is only a
+    // statement about plausibility, and both it and the bound depend on the
+    // coordinates being accurate, so it is reported as worth a look rather than as a
+    // defect.
+    std::set<std::pair<NodeId, NodeId>> checked;
+    for (const auto& from : nodes_) {
+        for (const auto& edge : adjacency_[static_cast<std::size_t>(from.id)]) {
+            const auto key = std::minmax(from.id, edge.to);
+            if (!checked.insert({key.first, key.second}).second) continue;
+
+            const auto straight = straightLineKm(from.id, edge.to);
+            if (!straight.has_value() || *straight <= 0.0) continue;
+
+            const double ratio = detourRatio(edge.distanceKm, *straight);
+            std::ostringstream detail;
+            detail << std::fixed << std::setprecision(1) << "'" << from.name << "' <-> '"
+                   << nodes_[static_cast<std::size_t>(edge.to)].name << "' is " << edge.distanceKm
+                   << " km by road but " << *straight << " km in a straight line";
+            if (ratio < 1.0) {
+                warnings.push_back(detail.str() + " -- shorter than the straight line, so impossible");
+            } else if (ratio > kImplausibleDetourRatio) {
+                warnings.push_back(detail.str() + " (detour ratio " +
+                                   std::to_string(static_cast<int>(ratio * 100) / 100.0).substr(0, 4) +
+                                   ") -- unusually indirect, worth checking");
+            }
         }
     }
 

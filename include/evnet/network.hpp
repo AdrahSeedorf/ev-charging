@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "evnet/geo.hpp"
 #include "evnet/units.hpp"
 
 namespace evnet {
@@ -25,8 +26,12 @@ struct Node {
     NodeId id{kNoNode};
     std::string name;
     std::optional<Station> station;
+    /// Where this place actually is. Optional, because the schema predates it and a
+    /// synthetic network need not be anywhere; present for both shipped datasets.
+    std::optional<Coordinate> location;
 
     bool hasStation() const { return station.has_value(); }
+    bool hasLocation() const { return location.has_value(); }
 };
 
 struct Edge {
@@ -75,10 +80,15 @@ public:
     /// varies the station set while leaving the topology untouched.
     void setStation(NodeId id, Station station);
 
-    /// Structural warnings a human should see: self-loops, duplicate edges,
-    /// unreachable components, stations with zero chargers. Returns an empty
+    /// Structural warnings a human should see: self-loops, isolated nodes,
+    /// disconnection, stations with zero chargers, and -- where coordinates are
+    /// present -- edges whose distance is geometrically impossible. Returns an empty
     /// vector for a clean network.
     std::vector<std::string> validate() const;
+
+    /// Straight-line distance between two nodes, or nullopt if either lacks
+    /// coordinates.
+    std::optional<Km> straightLineKm(NodeId a, NodeId b) const;
 
 private:
     std::vector<Node> nodes_;
