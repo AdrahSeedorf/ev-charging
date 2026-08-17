@@ -48,6 +48,9 @@ else()
     endif()
 endif()
 
+add_executable(evnet src/main.cpp)
+target_link_libraries(evnet PRIVATE evnet_core)
+
 if(EVNET_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
