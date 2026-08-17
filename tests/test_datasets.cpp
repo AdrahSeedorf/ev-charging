@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "evnet/geo.hpp"
 #include "evnet/network.hpp"
 #include "evnet/router.hpp"
 #include "evnet/siting.hpp"
@@ -32,17 +33,82 @@ std::vector<Demand> demands(const std::string& name) {
 
 }  // namespace
 
-TEST_CASE("the Sydney metro dataset loads and validates clean", "[data]") {
+TEST_CASE("the Sydney metro dataset is structurally sound", "[data]") {
     const Network network = load("sydney");
     CHECK(network.size() == 24);
     CHECK(network.stationNodes().size() == 16);
     CHECK(network.candidateSites().size() == 8);
+    for (const auto& node : network.nodes()) {
+        CHECK(node.hasLocation());
+    }
 
-    // The raw legacy matrix was asymmetric in five places and one value short.
-    // Those defects are corrected in tools/build_datasets.py, so the shipped
-    // dataset must now be structurally sound.
+    // The raw legacy matrix was asymmetric in five places and one value short; those
+    // are corrected in tools/build_datasets.py, so nothing STRUCTURAL should remain.
     const auto warnings = network.validate();
-    CHECK(warnings.empty());
+    for (const auto& warning : warnings) {
+        const bool geometric = warning.find("straight line") != std::string::npos;
+        CHECK(geometric);  // no self-loops, isolation, disconnection or empty stations
+    }
+}
+
+TEST_CASE("two inherited Sydney distances are geometrically impossible", "[data]") {
+    // Pinning a finding rather than papering over it. A road cannot be shorter than
+    // the line it spans, and two of the legacy distances are, so at least one of the
+    // distance and the coordinate is wrong.
+    //
+    // They are NOT corrected in the dataset, because that would mean inventing road
+    // distances -- and both fail by only 7-8%, which is within the error of a suburb
+    // centroid, so the coordinate is a live suspect too. Resolving them needs surveyed
+    // positions and real routing, which is what tools/fetch_real_network.py fetches.
+    //
+    // This test exists so the count cannot drift unnoticed in either direction.
+    const Network network = load("sydney");
+    const auto warnings = network.validate();
+
+    std::vector<std::string> impossible;
+    for (const auto& warning : warnings) {
+        if (warning.find("so impossible") != std::string::npos) impossible.push_back(warning);
+    }
+    REQUIRE(impossible.size() == 2);
+
+    const auto mentions = [&](const std::string& a, const std::string& b) {
+        return std::any_of(impossible.begin(), impossible.end(), [&](const std::string& w) {
+            return w.find(a) != std::string::npos && w.find(b) != std::string::npos;
+        });
+    };
+    CHECK(mentions("Randwick", "Hurstville"));
+    CHECK(mentions("Bankstown", "Fairfield"));
+}
+
+TEST_CASE("detour ratios look like real roads", "[data]") {
+    // A sanity check on the coordinates as much as the distances: if either were
+    // badly wrong, the ratio of road distance to straight-line distance would not
+    // land in the range real road networks occupy. Metro streets run higher than
+    // highways, which is exactly what these two datasets show.
+    const auto medianRatio = [](const Network& network) {
+        std::vector<double> ratios;
+        for (const auto& from : network.nodes()) {
+            for (const auto& edge : network.neighbours(from.id)) {
+                if (edge.to < from.id) continue;  // once per undirected pair
+                const auto straight = network.straightLineKm(from.id, edge.to);
+                if (straight.has_value() && *straight > 0.0) {
+                    ratios.push_back(detourRatio(edge.distanceKm, *straight));
+                }
+            }
+        }
+        REQUIRE_FALSE(ratios.empty());
+        std::sort(ratios.begin(), ratios.end());
+        return ratios[ratios.size() / 2];
+    };
+
+    const double hume = medianRatio(load("hume"));
+    const double sydney = medianRatio(load("sydney"));
+
+    // Highways are direct; city streets are not.
+    CHECK(hume > 1.0);
+    CHECK(hume < 1.35);
+    CHECK(sydney > hume);
+    CHECK(sydney < 2.0);
 }
 
 TEST_CASE("Sydney distances are symmetric after the data corrections", "[data]") {
