@@ -526,6 +526,50 @@ def build_edges(stations: list[dict], matrix: list[list[float]] | None,
             key = (min(i, j), max(i, j))
             pairs[key] = max(MIN_EDGE_KM, min(pairs.get(key, float("inf")), road))
 
+    # Nearest-k can leave separate clusters -- a real Sydney extract came back as 225
+    # of 238 stations reachable. Rather than telling the user to guess a larger k, bridge
+    # the components explicitly: repeatedly join the two closest stations that sit in
+    # different components until one component remains. That adds the minimum number of
+    # edges needed, and each one is the shortest available crossing.
+    parent = list(range(count))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    def union(i: int, j: int) -> bool:
+        ri, rj = find(i), find(j)
+        if ri == rj:
+            return False
+        parent[max(ri, rj)] = min(ri, rj)
+        return True
+
+    for a, b in pairs:
+        union(a, b)
+
+    bridges = 0
+    while len({find(i) for i in range(count)}) > 1:
+        best = None
+        for i in range(count):
+            for j in range(i + 1, count):
+                if find(i) == find(j):
+                    continue
+                road = (matrix[i][j] if matrix else None)
+                if road is None or road <= 0.0:
+                    road = great_circle_km(stations[i], stations[j]) * 1.35
+                if best is None or road < best[0]:
+                    best = (road, i, j)
+        if best is None:
+            break
+        road, i, j = best
+        pairs[(min(i, j), max(i, j))] = max(road, MIN_EDGE_KM)
+        union(i, j)
+        bridges += 1
+    if bridges:
+        notes.append(f"added {bridges} bridging edge(s) to make the network connected")
+
     edges = [{"from_id": a, "to_id": b, "distance_km": f"{d:.2f}"}
              for (a, b), d in sorted(pairs.items())]
     return edges, notes
@@ -715,8 +759,8 @@ def main() -> int:
     reached = connected(stations, edges)
     print(f"  {len(edges)} edges, {reached}/{len(stations)} reachable from the first station")
     if reached != len(stations):
-        print(f"  note: the graph is not fully connected -- raise --neighbours above "
-              f"{args.neighbours}, or narrow the bounding box")
+        print(f"  WARNING: still not fully connected ({reached}/{len(stations)}) -- "
+              f"this should not happen; please report it")
     if notes:
         print(f"  {len(notes)} distance note(s); first few:")
         for note in notes[:5]:
