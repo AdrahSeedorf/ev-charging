@@ -90,6 +90,8 @@ evnet compare  --network data/hume --demands data/hume/demands.csv \
 evnet simulate --network data/hume --demands data/hume/demands.csv \
                --planner optimal --timeseries load.csv --trips trips.csv
 evnet site     --network data/sydney --demands data/sydney/demands.csv --top 5
+evnet site     --network data/sydney --demands data/sydney/demands.csv \
+               --engine static                                        # and what it used to say
 
 python3 tools/saturation_sweep.py                                     # where congestion bites
 ```
@@ -231,6 +233,46 @@ The same check validates the coordinates themselves: median detour ratio comes o
 about the right magnitude for each. Had either the coordinates or the distances been
 badly wrong, they would not agree that closely.
 
+### 7. The two engines recommend different places to build
+
+Finding 1 measured how badly the static model overstates waits. This is what that error
+costs when it reaches a decision.
+
+`site` was the last command still answering from the static tally. It accepted
+`--engine`, `--speed` and `--stop-overhead` and silently ignored all three, so the one
+question the toolkit exists to answer was the one still being decided by the model
+stage 2 replaced. On a 62-station metro network with 400 vehicles:
+
+| engine | completed | mean wait | peak queue | mean gen $ | mean stops |
+|---|---|---|---|---|---|
+| `static` | 390/400 | 1.42h | 28 | $44.88 | 1.87 |
+| `events` | **400/400** | **0.00h** | **2** | **$32.86** | 2.40 |
+
+The static engine strands ten vehicles that in fact arrive, and reports a peak queue
+fourteen times the measured one. It also produces plans no driver would recognise —
+thirteen stops taking 0.07 to 0.8 kWh each — because with no clock there is nothing to
+lose by stopping again.
+
+The consequence is a different answer, not just different numbers next to the same one:
+
+| site | events rank | events Δ | uptake | static rank | static Δ |
+|---|---|---|---|---|---|
+| 3-2 | **1st** | −$1.60 | 11% | 5th | −$2.26 |
+| 0-2 | 3rd | −$0.34 | 3% | **1st** | −$1.59 |
+
+The static engine nominates 0-2 because it is relieving a queue that does not exist.
+Both engines remain selectable, and `site` now names the engine in its heading.
+
+A useful sanity check on any siting result, and one this repo asserts as a test: price
+the hypothetical station beyond use and every candidate must score *exactly* the
+baseline. If it does not, the mere existence of a station is moving the model and the
+ranking is part artefact. It holds under both engines.
+
+```bash
+./build/debug/evnet site --network data/sydney-real \
+    --demands data/sydney-real/demands.csv --site-price 999   # every Δ must be 0.00
+```
+
 ## Data quality: what the raw inputs got wrong
 
 The legacy Sydney distance matrix had two defects, both silent:
@@ -323,6 +365,36 @@ python3 tools/fetch_real_network.py \
 
 Real data is not clean data. Run `inspect` on whatever comes back — the geometric
 validator applies to fetched edges exactly as it does to the inherited ones.
+
+Three things the real Sydney extract needed that the shipped data never did:
+
+```bash
+python3 tools/fetch_real_network.py --bbox -34.15 150.60 -33.55 151.35 \
+    --name sydney-real --out data/sydney-real \
+    --merge-within-m 50 --candidate-sites 12 --candidate-clearance-km 6
+```
+
+- **Co-located duplicates.** OSM records the same physical site as a node *and* as the
+  car park polygon around it. Two entries at one location are zero km apart, which the
+  loader rightly refuses (`edge on line 295 has a non-positive distance`). They are
+  merged into one site with the combined charger count — flooring the distance would
+  have silenced the error while leaving two sites where a driver finds one.
+- **Disconnected pockets.** Nearest-4 left 225 of 238 stations reachable. Rather than
+  asking you to guess a larger `--neighbours` and densify the whole graph, the
+  components are bridged with the minimum number of shortest crossings.
+- **No candidate sites at all.** A network built from where chargers already *are*
+  contains no station-less nodes, and `site` ranks exactly those — so on real data the
+  headline question had nothing to answer. Candidates are laid on an unbiased grid over
+  the network's extent, clear of existing chargers.
+
+The third of those has a trap worth naming, because it produced a confidently wrong
+answer rather than an error. Built naively, injecting 12 candidates *deleted* 10
+station-to-station edges — candidates displaced real stations from each other's
+nearest-k shortlists, and bridged components the stations would otherwise have had to
+bridge themselves. Siting then reported that every possible new station made the network
+worse, because it was measuring the damage its own candidate set had done. Stations are
+now wired and bridged first, in complete isolation; candidates attach afterwards and can
+only add. The station subgraph is identical whether candidates are present or not.
 
 ### Maps
 
