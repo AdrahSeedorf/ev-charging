@@ -270,6 +270,49 @@ def station_name(tags: dict, index: int) -> str:
     return f"Station {index}"
 
 
+def add_candidate_sites(stations: list[dict], target: int, keep_clear_km: float) -> list[dict]:
+    """Add station-less nodes on a grid, so siting has somewhere to consider.
+
+    A network derived purely from where chargers already are contains no non-station
+    nodes, and `evnet site` ranks exactly those -- so on real data the toolkit's
+    headline question had nothing to answer. The gap is in the data, not the algorithm.
+
+    A grid across the network's own extent is a crude candidate set, but it is an
+    unbiased one: it does not presume the answer the way hand-picking a shortlist would.
+    Points landing within `keep_clear_km` of an existing station are dropped, since
+    recommending a site next to a working charger is not a recommendation.
+    """
+    if target <= 0:
+        return stations
+
+    lats = [s["lat"] for s in stations]
+    lons = [s["lon"] for s in stations]
+    south, north = min(lats), max(lats)
+    west, east = min(lons), max(lons)
+
+    side = max(2, math.ceil(math.sqrt(target * 1.6)))  # over-generate; many get dropped
+    added = []
+    for row in range(side):
+        for col in range(side):
+            # Offset by half a cell so points sit in cell centres, not on the edges.
+            lat = south + (north - south) * (row + 0.5) / side
+            lon = west + (east - west) * (col + 0.5) / side
+            point = {"lat": lat, "lon": lon}
+            if any(great_circle_km(point, s) < keep_clear_km for s in stations):
+                continue
+            if any(great_circle_km(point, a) < keep_clear_km for a in added):
+                continue
+            added.append({
+                "osm_id": "", "operator": "", "raw_name": f"Site {row}-{col}",
+                "name": f"Site {row}-{col}", "lat": lat, "lon": lon,
+                "chargers": 0, "power_kw": 0.0, "candidate": True,
+            })
+    added = added[:target]
+    print(f"  added {len(added)} candidate site(s) on a grid, at least "
+          f"{keep_clear_km:.1f} km clear of any existing station")
+    return stations + added
+
+
 def merge_colocated(stations: list[dict], within_m: float) -> list[dict]:
     """Collapse stations at effectively the same spot into one.
 
@@ -496,9 +539,21 @@ def build_edges(stations: list[dict], matrix: list[list[float]] | None,
     count = len(stations)
     pairs: dict[tuple[int, int], float] = {}
 
-    for i in range(count):
+    # Candidate sites must only ever ADD edges. Building nearest-k over all nodes
+    # together let a candidate displace a real station from another station's shortlist,
+    # which quietly REMOVED station-to-station links: injecting 12 candidates cost 10
+    # real edges, and siting then reported that every possible new station made the
+    # network worse. It was measuring the damage its own candidate set had done.
+    #
+    # So stations take their nearest-k from among stations only, and candidates then
+    # attach to their nearest-k over everything. The station subgraph is identical
+    # whether candidates are present or not.
+    real = [i for i in range(count) if not stations[i].get("candidate")]
+    real_set = set(real)
+
+    def nearest(i: int, pool: list[int]) -> list[tuple[float, int]]:
         distances = []
-        for j in range(count):
+        for j in pool:
             if i == j:
                 continue
             road = matrix[i][j] if matrix else None
@@ -522,51 +577,77 @@ def build_edges(stations: list[dict], matrix: list[list[float]] | None,
                 road = straight
             distances.append((road, j))
         distances.sort()
-        for road, j in distances[:neighbours]:
-            key = (min(i, j), max(i, j))
-            pairs[key] = max(MIN_EDGE_KM, min(pairs.get(key, float("inf")), road))
+        return distances
 
-    # Nearest-k can leave separate clusters -- a real Sydney extract came back as 225
-    # of 238 stations reachable. Rather than telling the user to guess a larger k, bridge
-    # the components explicitly: repeatedly join the two closest stations that sit in
-    # different components until one component remains. That adds the minimum number of
-    # edges needed, and each one is the shortest available crossing.
-    parent = list(range(count))
+    def link(sources: list[int], pool: list[int]) -> None:
+        for i in sources:
+            for road, j in nearest(i, pool)[:neighbours]:
+                key = (min(i, j), max(i, j))
+                pairs[key] = max(MIN_EDGE_KM, min(pairs.get(key, float("inf")), road))
 
-    def find(i: int) -> int:
-        while parent[i] != i:
-            parent[i] = parent[parent[i]]
-            i = parent[i]
-        return i
+    def bridge(members: list[int]) -> int:
+        """Join the closest cross-component pair until `members` forms one component.
 
-    def union(i: int, j: int) -> bool:
-        ri, rj = find(i), find(j)
-        if ri == rj:
-            return False
-        parent[max(ri, rj)] = min(ri, rj)
-        return True
+        Nearest-k can leave separate clusters -- a real Sydney extract came back as 225
+        of 238 stations reachable. Rather than telling the user to guess a larger k, this
+        bridges the components explicitly. That adds the minimum number of edges needed,
+        and each one is the shortest available crossing.
+        """
+        parent = {i: i for i in members}
 
-    for a, b in pairs:
-        union(a, b)
+        def find(i: int) -> int:
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
 
-    bridges = 0
-    while len({find(i) for i in range(count)}) > 1:
-        best = None
-        for i in range(count):
-            for j in range(i + 1, count):
-                if find(i) == find(j):
-                    continue
-                road = (matrix[i][j] if matrix else None)
-                if road is None or road <= 0.0:
-                    road = great_circle_km(stations[i], stations[j]) * 1.35
-                if best is None or road < best[0]:
-                    best = (road, i, j)
-        if best is None:
-            break
-        road, i, j = best
-        pairs[(min(i, j), max(i, j))] = max(road, MIN_EDGE_KM)
-        union(i, j)
-        bridges += 1
+        def union(i: int, j: int) -> bool:
+            ri, rj = find(i), find(j)
+            if ri == rj:
+                return False
+            parent[max(ri, rj)] = min(ri, rj)
+            return True
+
+        member_set = set(members)
+        for a, b in pairs:
+            if a in member_set and b in member_set:
+                union(a, b)
+
+        added = 0
+        while len({find(i) for i in members}) > 1:
+            best = None
+            for offset, i in enumerate(members):
+                for j in members[offset + 1:]:
+                    if find(i) == find(j):
+                        continue
+                    road = (matrix[i][j] if matrix else None)
+                    if road is None or road <= 0.0:
+                        road = great_circle_km(stations[i], stations[j]) * 1.35
+                    if best is None or road < best[0]:
+                        best = (road, i, j)
+            if best is None:
+                break
+            road, i, j = best
+            pairs[(min(i, j), max(i, j))] = max(road, MIN_EDGE_KM)
+            union(i, j)
+            added += 1
+        return added
+
+    everything = list(range(count))
+    candidates = [i for i in everything if i not in real_set]
+
+    # Stations are wired up first, and COMPLETELY -- nearest-k among stations, then
+    # bridging over the station-only graph. Doing the bridging before candidates exist is
+    # the second half of the invariance. Bridging the combined graph looked harmless but
+    # was not: a candidate sitting between two clusters bridged them itself, so three
+    # station-to-station crossings that the base network has were never added, and siting
+    # was once again scoring itself against a network its own candidates had changed.
+    link(real, real)
+    bridges = bridge(real)
+
+    # Only now do candidates attach, and they can only add.
+    link(candidates, everything)
+    bridges += bridge(everything)
     if bridges:
         notes.append(f"added {bridges} bridging edge(s) to make the network connected")
 
@@ -616,13 +697,17 @@ def build_demands(stations: list[dict], count: int, seed: int) -> list[dict]:
     long trips need a stop and short ones do not.
     """
     rng = random.Random(seed)
-    last = len(stations) - 1
+    # Trips run between real places. A candidate site has no charger, so sending a
+    # vehicle there as an origin would be modelling a journey from a car park that does
+    # not exist yet.
+    real = [s for s in stations if not s.get("candidate")] or stations
+    ids = [s["id"] for s in real]
 
     # Longest straight-line separation, inflated by a typical detour factor, as a
     # stand-in for the network's diameter by road.
     extent = 0.0
-    for i, a in enumerate(stations):
-        for b in stations[i + 1:]:
+    for i, a in enumerate(real):
+        for b in real[i + 1:]:
             extent = max(extent, great_circle_km(a, b))
     extent = max(extent * 1.35, 20.0)
     low, high = extent * 0.40, extent * 0.75
@@ -631,10 +716,10 @@ def build_demands(stations: list[dict], count: int, seed: int) -> list[dict]:
 
     out = []
     for i in range(count):
-        origin = rng.randint(0, last)
-        destination = rng.randint(0, last)
-        while destination == origin and last > 0:
-            destination = rng.randint(0, last)
+        origin = rng.choice(ids)
+        destination = rng.choice(ids)
+        while destination == origin and len(ids) > 1:
+            destination = rng.choice(ids)
         capacity_km = rng.uniform(low, high)
         # Start between a fifth and nearly full, so some trips need a stop immediately
         # and others could finish without one.
@@ -684,6 +769,12 @@ def main() -> int:
     parser.add_argument("--max-stations", type=int, default=250,
                         help="cap on stations; requests are tiled, so this is about "
                              "runtime rather than any API limit [250]")
+    parser.add_argument("--candidate-sites", type=int, default=0,
+                        help="add roughly this many station-less nodes on a grid, so "
+                             "`evnet site` has candidates to rank [0]")
+    parser.add_argument("--candidate-clearance-km", type=float, default=2.0,
+                        help="keep candidate sites at least this far from an existing "
+                             "station [2.0]")
     parser.add_argument("--merge-within-m", type=float, default=50.0,
                         help="collapse stations closer than this into one site, summing "
                              "their chargers; OSM maps the same site more than once [50]")
@@ -743,6 +834,7 @@ def main() -> int:
     print(f"  {len(stations)} charging stations from OSM")
     stations = merge_colocated(stations, args.merge_within_m)
     print(f"  {len(stations)} distinct sites")
+    stations = add_candidate_sites(stations, args.candidate_sites, args.candidate_clearance_km)
     for index, station in enumerate(stations):
         station["id"] = index
 
@@ -767,8 +859,9 @@ def main() -> int:
             print(f"    - {note}")
 
     nodes = [{
-        "id": s["id"], "name": s["name"], "has_station": 1,
-        "price_per_kwh": f"{args.price:.2f}",
+        "id": s["id"], "name": s["name"],
+        "has_station": 0 if s.get("candidate") else 1,
+        "price_per_kwh": "0.00" if s.get("candidate") else f"{args.price:.2f}",
         "chargers": s["chargers"], "power_kw": f"{s['power_kw']:.1f}",
         "latitude": f"{s['lat']:.5f}", "longitude": f"{s['lon']:.5f}",
         "osm_id": s["osm_id"], "operator": s["operator"],
