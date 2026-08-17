@@ -10,10 +10,12 @@ FetchContent_Declare(Catch2
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(evnet_tests
+        test_datasets.cpp
         test_network.cpp
         test_policy.cpp
         test_router.cpp
-        test_simulation.cpp)
+        test_simulation.cpp
+        test_siting.cpp)
 
 target_link_libraries(evnet_tests PRIVATE evnet_core Catch2::Catch2WithMain)
 
