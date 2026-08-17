@@ -210,9 +210,51 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
     }
 
     if (via[path[1]] == Move::Charge) {
+        // The grid is for PLANNING; execution should not inherit its rounding.
+        //
+        // Charging transitions move between whole levels, so a plan that needs
+        // 61.2 kWh has to buy 63 kWh -- and at ~4 kWh per level over three or four
+        // stops that surplus was costing the optimal planner more in wasted energy
+        // than its better routing saved. So the level arithmetic decides WHERE and
+        // roughly how much, and then the exact amount required to reach the next
+        // planned charging node (or the destination) is computed off-grid.
+        NodeId nextTarget = vehicle.destination;
+        for (std::size_t i = 2; i < path.size(); ++i) {
+            if (via[path[i]] == Move::Charge) {
+                nextTarget = static_cast<NodeId>(path[i] / levelCount);
+                break;
+            }
+        }
+
         const std::size_t fromLevel = path[0] % levelCount;
         const std::size_t toLevel = path[1] % levelCount;
-        plan.first = Action::chargeHere(static_cast<double>(toLevel - fromLevel) * step);
+        const Kwh gridEnergy = static_cast<double>(toLevel - fromLevel) * step;
+
+        const Km leg = router_->distance(vehicle.at, nextTarget);
+        Kwh exactEnergy = 0.0;
+        if (leg != Router::kUnreachable) {
+            const Kwh needed = energyForDistance(leg, vehicle.efficiency) +
+                               vehicle.batteryKwh * config_.reserveFraction;
+            exactEnergy = std::min(vehicle.batteryKwh, needed) - vehicle.socKwh;
+        }
+
+        // Two quite different intentions can produce a Charge move, and telling them
+        // apart matters:
+        //
+        //   * "just enough to reach the next stop" -- here the grid had to round up
+        //     to a whole level, and that surplus is pure waste. Use the exact figure.
+        //
+        //   * "fill up, this station is cheap" -- the plan deliberately wants more
+        //     than the minimum, and substituting the exact minimum would throw away
+        //     the economic reasoning that chose this stop. Keep the grid amount.
+        //
+        // The grid amount exceeding the exact requirement by more than one level is
+        // what separates the second case from rounding noise in the first.
+        const bool bulkBuying = gridEnergy > exactEnergy + step;
+        Kwh energy = bulkBuying ? gridEnergy : exactEnergy;
+        if (energy <= kEnergyEpsilon) energy = gridEnergy;
+
+        plan.first = Action::chargeHere(energy);
         return plan;
     }
 

@@ -106,7 +106,7 @@ public:
                    const Router& router,
                    Dollars valueOfTimePerHour,
                    FeasibilityConfig config = {},
-                   int chargeLevels = 20);
+                   int chargeLevels = 40);
 
     std::string name() const override { return "optimal"; }
     Action decide(const VehicleState& vehicle, const WaitOracle& oracle) const override;
