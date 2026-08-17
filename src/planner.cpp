@@ -131,7 +131,13 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
 
     std::size_t goalState = stateCount;
     while (!frontier.empty()) {
-        const auto [cost, state] = frontier.top();
+        // Plain locals rather than a structured binding, because `relax` below
+        // captures both. Capturing a structured binding is a C++20 extension: GCC
+        // accepts it silently, Clang rejects it under -Werror, so the structured
+        // form compiled here and would have failed on macOS.
+        const Entry top = frontier.top();
+        const Dollars cost = top.first;
+        const std::size_t state = top.second;
         frontier.pop();
         if (cost > best[state]) continue;  // stale heap entry
 

@@ -10,9 +10,6 @@
 namespace evnet {
 namespace {
 
-/// Below this, an amount of energy is not worth stopping for.
-constexpr Kwh kNegligibleKwh = 0.01;
-
 /// Slack for "do I have enough charge" comparisons. Energy figures are derived
 /// through several multiplications and divisions, so a vehicle that mathematically
 /// has exactly enough can land a fraction of a microjoule short. Without this
