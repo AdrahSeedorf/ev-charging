@@ -28,6 +28,7 @@ add_library(evnet_core STATIC
         src/policy.cpp
         src/router.cpp
         src/simulation.cpp
+        src/simulator.cpp
         src/siting.cpp
         src/station_runtime.cpp
         src/station_state.cpp)
