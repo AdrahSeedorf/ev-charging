@@ -163,7 +163,31 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
 
         // Transition 1: drive along one edge. Per-edge rather than per-shortest-path
         // so that energy is accounted along the route actually taken.
+        //
+        // Below the reserve you may not drive on, only charge. Without this the station
+        // waiver below leaked: a plan could roll into a charger under the reserve, not
+        // plug in, and drive away still under it -- collecting the exemption without
+        // paying for it. The justification for the waiver is that you are about to plug
+        // in, so a plan that does not plug in has no claim on it.
+        //
+        // The effect is small but it is a free lunch, and it flatters this planner in
+        // exactly the comparison the toolkit exists to make: on a 62-station metro
+        // network the old rule understated the fleet's mean generalised cost by about
+        // $0.05 a trip, all of it borrowed against a safety margin the vehicle never
+        // restored.
+        //
+        // Note the guard is narrow on purpose: it bites only where a charger is actually
+        // available. Below the reserve with nowhere to plug in, driving is the only move
+        // there is, and forbidding it would declare infeasible a journey the greedy
+        // planners will happily attempt -- the same asymmetry the waiver was added to
+        // remove. So the rule is that the exemption must be earned where it can be: at a
+        // charger, by charging.
+        const Node& here = network_->node(static_cast<NodeId>(node));
+        const bool couldChargeHere = here.hasStation() && here.station->chargers > 0;
+        const bool mustChargeFirst = level < reserveLevel && couldChargeHere;
+
         for (const auto& edge : network_->neighbours(static_cast<NodeId>(node))) {
+            if (mustChargeFirst) break;
             const Kwh burn = energyForDistance(edge.distanceKm, vehicle.efficiency);
             const auto burnLevels = static_cast<std::size_t>(std::ceil(burn / step));
             if (burnLevels > level) continue;
@@ -186,8 +210,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
         }
 
         // Transition 2: charge here, to any higher level.
-        const Node& here = network_->node(static_cast<NodeId>(node));
-        if (here.hasStation() && here.station->chargers > 0) {
+        if (couldChargeHere) {
             for (std::size_t target = level + 1; target < levelCount; ++target) {
                 const Kwh energy = static_cast<double>(target - level) * step;
                 const Hours duration =

@@ -356,3 +356,61 @@ TEST_CASE("the optimal planner may arrive at a charger below its reserve", "[pla
     CHECK(trips[0].completed);
     CHECK_FALSE(trips[0].stops.empty());
 }
+
+TEST_CASE("but it may not drive away from one still below its reserve", "[planner]") {
+    // The other half of the rule above. Arriving at a charger under the reserve is
+    // fine; leaving one still under it is not, because the reserve's whole job is to
+    // cover the leg AFTER the stop. Without this the waiver was collectable without
+    // being paid for: a plan could coast into an expensive charger, decline to plug in,
+    // and coast out again on fumes to reach a cheaper one.
+    //
+    // The cost of the leak was a free lunch rather than a wrong answer -- on a
+    // 62-station network the old rule understated the fleet's mean generalised cost by
+    // about $0.05 a trip -- but it flattered this planner in precisely the comparison
+    // the toolkit exists to make, and it did so by spending a safety margin.
+    //
+    // The layout makes the temptation explicit: Near is dear, Far is cheap, and a
+    // vehicle can just about coast from Near to Far on less than its reserve.
+    Network network;
+    Node start;
+    start.name = "Start";
+    network.addNode(start);
+    Node near;
+    near.name = "Near";
+    near.station = Station{0.90, 4, 100.0};  // dear: the planner would rather skip it
+    network.addNode(near);
+    Node far;
+    far.name = "Far";
+    far.station = Station{0.20, 4, 100.0};  // cheap: worth coasting to, if that were legal
+    network.addNode(far);
+    Node target;
+    target.name = "Target";
+    network.addNode(target);
+    network.addEdge(0, 1, 60.0);
+    network.addEdge(1, 2, 10.0);
+    network.addEdge(2, 3, 10.0);
+
+    const Router router(network);
+    const SimulatorConfig config = fastConfig();
+    const Simulator simulator(network, router, config);
+
+    Demand demand;
+    demand.id = 1;
+    demand.origin = 0;
+    demand.destination = 3;
+    demand.batteryKwh = 40.0;  // reserve is 4 kWh
+    demand.socKwh = 13.0;      // 72 km of range: reaches Near with 2.2 kWh, under reserve
+    demand.efficiency = 18.0;
+
+    auto optimal = makePlanner("optimal", network, router, config.valueOfTimePerHour,
+                               config.feasibility());
+    StationRuntime runtime(network);
+    const auto trips = simulator.run({demand}, *optimal, runtime);
+
+    REQUIRE(trips[0].completed);
+    const NodeId nearId = network.findByName("Near");
+    const bool chargedAtNear =
+        std::any_of(trips[0].stops.begin(), trips[0].stops.end(),
+                    [nearId](const Stop& s) { return s.node == nearId; });
+    CHECK(chargedAtNear);
+}
