@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" width="1000" height="720" role="img" aria-label="Sydney metro charging network. 24 suburbs, 16 with chargers. Load from 100 top-up missions under the optimal planner." font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<rect width="1000" height="720" fill="#1a1a19"/>
+<text x="60" y="40" fill="#ffffff" font-size="21" font-weight="600">Sydney metro charging network</text>
+<text x="60" y="63" fill="#c3c2b7" font-size="13">24 suburbs, 16 with chargers. Load from 100 top-up missions under the optimal planner.</text>
+<g stroke="#383835" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.85">
+<line x1="86.8" y1="237.3" x2="184.8" y2="261.6"/>
+<line x1="184.8" y1="261.6" x2="311.5" y2="92.0"/>
+<line x1="184.8" y1="261.6" x2="333.0" y2="261.8"/>
+<line x1="184.8" y1="261.6" x2="213.5" y2="521.4"/>
+<line x1="311.5" y1="92.0" x2="389.4" y2="183.1"/>
+<line x1="389.4" y1="183.1" x2="444.7" y2="211.9"/>
+<line x1="389.4" y1="183.1" x2="333.0" y2="261.8"/>
+<line x1="444.7" y1="211.9" x2="333.0" y2="261.8"/>
+<line x1="444.7" y1="211.9" x2="439.0" y2="324.6"/>
+<line x1="444.7" y1="211.9" x2="550.7" y2="173.9"/>
+<line x1="333.0" y1="261.8" x2="439.0" y2="324.6"/>
+<line x1="333.0" y1="261.8" x2="352.2" y2="467.1"/>
+<line x1="439.0" y1="324.6" x2="510.1" y2="368.0"/>
+<line x1="439.0" y1="324.6" x2="574.4" y2="273.0"/>
+<line x1="439.0" y1="324.6" x2="352.2" y2="467.1"/>
+<line x1="439.0" y1="324.6" x2="555.2" y2="324.6"/>
+<line x1="510.1" y1="368.0" x2="556.3" y2="408.8"/>
+<line x1="510.1" y1="368.0" x2="574.4" y2="273.0"/>
+<line x1="510.1" y1="368.0" x2="478.5" y2="464.4"/>
+<line x1="510.1" y1="368.0" x2="543.9" y2="406.0"/>
+<line x1="556.3" y1="408.8" x2="710.8" y2="459.0"/>
+<line x1="556.3" y1="408.8" x2="671.4" y2="416.9"/>
+<line x1="556.3" y1="408.8" x2="478.5" y2="464.4"/>
+<line x1="556.3" y1="408.8" x2="543.9" y2="406.0"/>
+<line x1="710.8" y1="459.0" x2="721.0" y2="428.4"/>
+<line x1="710.8" y1="459.0" x2="671.4" y2="416.9"/>
+<line x1="710.8" y1="459.0" x2="554.1" y2="530.9"/>
+<line x1="710.8" y1="459.0" x2="478.5" y2="464.4"/>
+<line x1="721.0" y1="428.4" x2="671.4" y2="416.9"/>
+<line x1="763.2" y1="300.0" x2="645.6" y2="300.0"/>
+<line x1="645.6" y1="300.0" x2="574.4" y2="273.0"/>
+<line x1="645.6" y1="300.0" x2="671.4" y2="416.9"/>
+<line x1="574.4" y1="273.0" x2="550.7" y2="173.9"/>
+<line x1="574.4" y1="273.0" x2="555.2" y2="324.6"/>
+<line x1="554.1" y1="530.9" x2="478.5" y2="464.4"/>
+<line x1="478.5" y1="464.4" x2="352.2" y2="467.1"/>
+<line x1="478.5" y1="464.4" x2="543.9" y2="406.0"/>
+<line x1="478.5" y1="464.4" x2="389.4" y2="402.0"/>
+<line x1="352.2" y1="467.1" x2="213.5" y2="521.4"/>
+<line x1="352.2" y1="467.1" x2="389.4" y2="402.0"/>
+<line x1="213.5" y1="521.4" x2="229.3" y2="664.0"/>
+</g>
+<g>
+<title>Penrith — 6 chargers, $0.35/kWh — peak load 17%, mean 1%</title>
+<circle cx="86.8" cy="237.3" r="10.1" fill="#184f95" stroke="#1a1a19" stroke-width="2"/>
+<text x="97.8" y="241.3" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Penrith</text>
+</g>
+<g>
+<title>St Marys — no charging station</title>
+<circle cx="184.8" cy="261.6" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="195.8" y="265.6" text-anchor="start" fill="#898781" font-size="11" font-weight="400">St Marys</text>
+</g>
+<g>
+<title>Box Hill — 2 chargers, free — peak load 50%, mean 7%</title>
+<circle cx="311.5" cy="92.0" r="8.0" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="322.5" y="96.0" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Box Hill</text>
+</g>
+<g>
+<title>Kellyville — no charging station</title>
+<circle cx="389.4" cy="183.1" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="400.4" y="187.1" text-anchor="start" fill="#898781" font-size="11" font-weight="400">Kellyville</text>
+</g>
+<g>
+<title>Castle Hill — no charging station</title>
+<circle cx="444.7" cy="211.9" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="455.7" y="215.9" text-anchor="start" fill="#898781" font-size="11" font-weight="400">Castle Hill</text>
+</g>
+<g>
+<title>Blacktown — 6 chargers, $0.25/kWh — peak load 33%, mean 3%</title>
+<circle cx="333.0" cy="261.8" r="10.1" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="344.0" y="265.8" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Blacktown</text>
+</g>
+<g>
+<title>Parramatta — 8 chargers, $0.25/kWh — peak load 38%, mean 8%</title>
+<circle cx="439.0" cy="324.6" r="10.9" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="450.0" y="328.6" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Parramatta</text>
+</g>
+<g>
+<title>Olympic Park — 6 chargers, $0.40/kWh — peak load 33%, mean 2%</title>
+<circle cx="510.1" cy="368.0" r="10.1" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="521.1" y="372.0" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Olympic Park</text>
+</g>
+<g>
+<title>Burwood — 4 chargers, $0.46/kWh — peak load 0%, mean 0%</title>
+<circle cx="556.3" cy="408.8" r="9.2" fill="#184f95" stroke="#1a1a19" stroke-width="2"/>
+<text x="567.3" y="412.8" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Burwood</text>
+</g>
+<g>
+<title>Randwick — 4 chargers, $0.50/kWh — peak load 25%, mean 1%</title>
+<circle cx="710.8" cy="459.0" r="9.2" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="721.8" y="463.0" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Randwick</text>
+</g>
+<g>
+<title>Bondi Junction — 4 chargers, $0.25/kWh — peak load 50%, mean 12%</title>
+<circle cx="721.0" cy="428.4" r="9.2" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="710.0" y="432.4" text-anchor="end" fill="#ffffff" font-size="11" font-weight="600">Bondi Junction</text>
+</g>
+<g>
+<title>Manly — 2 chargers, free — peak load 50%, mean 6%</title>
+<circle cx="763.2" cy="300.0" r="8.0" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="763.2" y="288.0" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Manly</text>
+</g>
+<g>
+<title>Chatswood — 6 chargers, $0.55/kWh — peak load 17%, mean 1%</title>
+<circle cx="645.6" cy="300.0" r="10.1" fill="#184f95" stroke="#1a1a19" stroke-width="2"/>
+<text x="656.6" y="304.0" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Chatswood</text>
+</g>
+<g>
+<title>Macquarie Pk — 4 chargers, $0.33/kWh — peak load 25%, mean 3%</title>
+<circle cx="574.4" cy="273.0" r="9.2" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="585.4" y="277.0" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Macquarie Pk</text>
+</g>
+<g>
+<title>Hornsby — no charging station</title>
+<circle cx="550.7" cy="173.9" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="561.7" y="177.9" text-anchor="start" fill="#898781" font-size="11" font-weight="400">Hornsby</text>
+</g>
+<g>
+<title>Central — no charging station</title>
+<circle cx="671.4" cy="416.9" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="671.4" y="404.9" text-anchor="middle" fill="#898781" font-size="11" font-weight="400">Central</text>
+</g>
+<g>
+<title>Hurstville — 4 chargers, $0.30/kWh — peak load 25%, mean 3%</title>
+<circle cx="554.1" cy="530.9" r="9.2" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="565.1" y="534.9" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Hurstville</text>
+</g>
+<g>
+<title>Bankstown — 4 chargers, $0.52/kWh — peak load 50%, mean 2%</title>
+<circle cx="478.5" cy="464.4" r="9.2" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="489.5" y="468.4" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Bankstown</text>
+</g>
+<g>
+<title>Liverpool — no charging station</title>
+<circle cx="352.2" cy="467.1" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="363.2" y="471.1" text-anchor="start" fill="#898781" font-size="11" font-weight="400">Liverpool</text>
+</g>
+<g>
+<title>Leppington — no charging station — recommended new site</title>
+<circle cx="213.5" cy="521.4" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<circle cx="213.5" cy="521.4" r="10.0" fill="none" stroke="#0ca30c" stroke-width="2.5"/>
+<text x="224.5" y="525.4" text-anchor="start" fill="#898781" font-size="11" font-weight="400">Leppington</text>
+<text x="224.5" y="537.4" text-anchor="start" fill="#0ca30c" font-size="10" font-weight="600">&#9679; recommended site</text>
+</g>
+<g>
+<title>Campbelltown — 4 chargers, $0.65/kWh — peak load 50%, mean 4%</title>
+<circle cx="229.3" cy="664.0" r="9.2" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="240.3" y="668.0" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Campbelltown</text>
+</g>
+<g>
+<title>Ryde — 3 chargers, $0.28/kWh — peak load 33%, mean 2%</title>
+<circle cx="555.2" cy="324.6" r="8.6" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="566.2" y="328.6" text-anchor="start" fill="#ffffff" font-size="11" font-weight="600">Ryde</text>
+</g>
+<g>
+<title>Strathfield — 4 chargers, $0.30/kWh — peak load 25%, mean 1%</title>
+<circle cx="543.9" cy="406.0" r="9.2" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<text x="532.9" y="410.0" text-anchor="end" fill="#ffffff" font-size="11" font-weight="600">Strathfield</text>
+</g>
+<g>
+<title>Fairfield — no charging station</title>
+<circle cx="389.4" cy="402.0" r="5.0" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="378.4" y="406.0" text-anchor="end" fill="#898781" font-size="11" font-weight="400">Fairfield</text>
+</g>
+<text x="814" y="98" fill="#c3c2b7" font-size="11" font-weight="600" letter-spacing="0.4">PEAK CHARGER LOAD</text>
+<rect x="814" y="109" width="14" height="12" rx="3" fill="#184f95"/>
+<text x="836" y="118" fill="#c3c2b7" font-size="11">0-20%</text>
+<rect x="814" y="130" width="14" height="12" rx="3" fill="#256abf"/>
+<text x="836" y="139" fill="#c3c2b7" font-size="11">20-40%</text>
+<rect x="814" y="151" width="14" height="12" rx="3" fill="#3987e5"/>
+<text x="836" y="160" fill="#c3c2b7" font-size="11">40-60%</text>
+<rect x="814" y="172" width="14" height="12" rx="3" fill="#6da7ec"/>
+<text x="836" y="181" fill="#c3c2b7" font-size="11">60-80%</text>
+<rect x="814" y="193" width="14" height="12" rx="3" fill="#9ec5f4"/>
+<text x="836" y="202" fill="#c3c2b7" font-size="11">80-100%</text>
+<text x="814" y="241" fill="#c3c2b7" font-size="11" font-weight="600" letter-spacing="0.4">PLACE</text>
+<circle cx="821" cy="259" r="7" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="836" y="263" fill="#c3c2b7" font-size="11">station (area = chargers)</text>
+<circle cx="821" cy="281" r="5" fill="#1a1a19" stroke="#898781" stroke-width="2"/>
+<text x="836" y="285" fill="#c3c2b7" font-size="11">no station</text>
+<circle cx="821" cy="303" r="7" fill="none" stroke="#0ca30c" stroke-width="2.5"/>
+<text x="836" y="307" fill="#c3c2b7" font-size="11">recommended site</text>
+<text x="60" y="700" fill="#898781" font-size="10">Equirectangular projection, longitude scaled by cos(mean latitude). Positions are place centres, accurate to about a kilometre.</text>
+</svg>

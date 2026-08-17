@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" width="1000" height="720" role="img" aria-label="Hume corridor charging network. Sydney to Melbourne, 891 km. Load from 199 journeys under the optimal planner." font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<rect width="1000" height="720" fill="#fcfcfb"/>
+<text x="60" y="40" fill="#0b0b0b" font-size="21" font-weight="600">Hume corridor charging network</text>
+<text x="60" y="63" fill="#52514e" font-size="13">Sydney to Melbourne, 891 km. Load from 199 journeys under the optimal planner.</text>
+<g stroke="#c3c2b7" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.85">
+<line x1="790.0" y1="94.5" x2="743.8" y2="122.7"/>
+<line x1="743.8" y1="122.7" x2="701.3" y2="178.0"/>
+<line x1="701.3" y1="178.0" x2="615.7" y2="221.9"/>
+<line x1="615.7" y1="221.9" x2="521.3" y2="234.1"/>
+<line x1="521.3" y1="234.1" x2="427.3" y2="266.6"/>
+<line x1="427.3" y1="266.6" x2="334.6" y2="361.3"/>
+<line x1="334.6" y1="361.3" x2="287.9" y2="411.4"/>
+<line x1="287.9" y1="411.4" x2="217.6" y2="452.3"/>
+<line x1="217.6" y1="452.3" x2="130.9" y2="508.9"/>
+<line x1="130.9" y1="508.9" x2="62.0" y2="604.3"/>
+<line x1="62.0" y1="604.3" x2="60.0" y2="661.5"/>
+</g>
+<g>
+<title>Sydney — 10 chargers, $0.45/kWh — peak load 20%, mean 2%</title>
+<circle cx="790.0" cy="94.5" r="11.6" fill="#86b6ef" stroke="#fcfcfb" stroke-width="2"/>
+<text x="779.0" y="98.5" text-anchor="end" fill="#0b0b0b" font-size="11" font-weight="600">Sydney</text>
+</g>
+<g>
+<title>Campbelltown — 4 chargers, $0.48/kWh — peak load 25%, mean 2%</title>
+<circle cx="743.8" cy="122.7" r="9.2" fill="#5598e7" stroke="#fcfcfb" stroke-width="2"/>
+<text x="732.8" y="126.7" text-anchor="end" fill="#0b0b0b" font-size="11" font-weight="600">Campbelltown</text>
+</g>
+<g>
+<title>Mittagong — 3 chargers, $0.55/kWh — peak load 33%, mean 0%</title>
+<circle cx="701.3" cy="178.0" r="8.6" fill="#5598e7" stroke="#fcfcfb" stroke-width="2"/>
+<text x="712.3" y="182.0" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Mittagong</text>
+</g>
+<g>
+<title>Goulburn — 4 chargers, $0.52/kWh — peak load 100%, mean 31%</title>
+<circle cx="615.7" cy="221.9" r="9.2" fill="#104281" stroke="#fcfcfb" stroke-width="2"/>
+<text x="626.7" y="225.9" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Goulburn</text>
+</g>
+<g>
+<title>Yass — 2 chargers, $0.58/kWh — peak load 100%, mean 12%</title>
+<circle cx="521.3" cy="234.1" r="8.0" fill="#104281" stroke="#fcfcfb" stroke-width="2"/>
+<text x="532.3" y="238.1" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Yass</text>
+</g>
+<g>
+<title>Gundagai — 3 chargers, $0.60/kWh — peak load 33%, mean 1%</title>
+<circle cx="427.3" cy="266.6" r="8.6" fill="#5598e7" stroke="#fcfcfb" stroke-width="2"/>
+<text x="438.3" y="270.6" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Gundagai</text>
+</g>
+<g>
+<title>Holbrook — 2 chargers, $0.62/kWh — peak load 50%, mean 0%</title>
+<circle cx="334.6" cy="361.3" r="8.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="345.6" y="365.3" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Holbrook</text>
+</g>
+<g>
+<title>Albury — 4 chargers, $0.50/kWh — peak load 100%, mean 33%</title>
+<circle cx="287.9" cy="411.4" r="9.2" fill="#104281" stroke="#fcfcfb" stroke-width="2"/>
+<text x="298.9" y="415.4" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Albury</text>
+</g>
+<g>
+<title>Wangaratta — 3 chargers, $0.56/kWh — peak load 0%, mean 0%</title>
+<circle cx="217.6" cy="452.3" r="8.6" fill="#86b6ef" stroke="#fcfcfb" stroke-width="2"/>
+<text x="228.6" y="456.3" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Wangaratta</text>
+</g>
+<g>
+<title>Euroa — 3 chargers, $0.59/kWh — peak load 0%, mean 0%</title>
+<circle cx="130.9" cy="508.9" r="8.6" fill="#86b6ef" stroke="#fcfcfb" stroke-width="2"/>
+<text x="141.9" y="512.9" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Euroa</text>
+</g>
+<g>
+<title>Wallan — 2 chargers, $0.54/kWh — peak load 0%, mean 0%</title>
+<circle cx="62.0" cy="604.3" r="8.0" fill="#86b6ef" stroke="#fcfcfb" stroke-width="2"/>
+<text x="73.0" y="608.3" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Wallan</text>
+</g>
+<g>
+<title>Melbourne — 8 chargers, $0.44/kWh — peak load 25%, mean 2%</title>
+<circle cx="60.0" cy="661.5" r="10.9" fill="#5598e7" stroke="#fcfcfb" stroke-width="2"/>
+<text x="71.0" y="665.5" text-anchor="start" fill="#0b0b0b" font-size="11" font-weight="600">Melbourne</text>
+</g>
+<text x="814" y="98" fill="#52514e" font-size="11" font-weight="600" letter-spacing="0.4">PEAK CHARGER LOAD</text>
+<rect x="814" y="109" width="14" height="12" rx="3" fill="#86b6ef"/>
+<text x="836" y="118" fill="#52514e" font-size="11">0-20%</text>
+<rect x="814" y="130" width="14" height="12" rx="3" fill="#5598e7"/>
+<text x="836" y="139" fill="#52514e" font-size="11">20-40%</text>
+<rect x="814" y="151" width="14" height="12" rx="3" fill="#2a78d6"/>
+<text x="836" y="160" fill="#52514e" font-size="11">40-60%</text>
+<rect x="814" y="172" width="14" height="12" rx="3" fill="#1c5cab"/>
+<text x="836" y="181" fill="#52514e" font-size="11">60-80%</text>
+<rect x="814" y="193" width="14" height="12" rx="3" fill="#104281"/>
+<text x="836" y="202" fill="#52514e" font-size="11">80-100%</text>
+<text x="814" y="241" fill="#52514e" font-size="11" font-weight="600" letter-spacing="0.4">PLACE</text>
+<circle cx="821" cy="259" r="7" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="836" y="263" fill="#52514e" font-size="11">station (area = chargers)</text>
+<circle cx="821" cy="281" r="5" fill="#fcfcfb" stroke="#898781" stroke-width="2"/>
+<text x="836" y="285" fill="#52514e" font-size="11">no station</text>
+<text x="60" y="700" fill="#898781" font-size="10">Equirectangular projection, longitude scaled by cos(mean latitude). Positions are place centres, accurate to about a kilometre.</text>
+</svg>

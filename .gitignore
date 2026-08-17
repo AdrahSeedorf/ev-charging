@@ -40,3 +40,7 @@ tests/tmp_*
 
 # Exports written by the CLI and the analysis tools
 out/
+
+# The committed maps are the SVGs, which GitHub renders inline in the README.
+# The interactive HTML is regenerable and large, so it stays out.
+docs/*.html
