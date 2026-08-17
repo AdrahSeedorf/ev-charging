@@ -122,19 +122,28 @@ def _via_curl(url: str, data: bytes | None) -> dict:
 
 
 TRANSPORT = "auto"  # set from --transport
+_TLS_BROKEN = False  # latched once Python's TLS has failed, so it is not retried 36 times
 
 
 def request_json(url: str, data: bytes | None, label: str) -> dict:
-    """One HTTP call, falling back to curl when Python's TLS will not negotiate."""
-    if TRANSPORT == "curl":
+    """One HTTP call, falling back to curl when Python's TLS will not negotiate.
+
+    The fallback LATCHES. Python's TLS stack either can negotiate with a host or it
+    cannot; it does not change its mind between requests. Retrying it per call meant a
+    36-tile run printed the same handshake failure 36 times and paid the timeout each
+    time, which buried the real progress output.
+    """
+    global _TLS_BROKEN
+    if TRANSPORT == "curl" or (TRANSPORT == "auto" and _TLS_BROKEN):
         return _via_curl(url, data)
     try:
         return _via_urllib(url, data)
     except (ssl.SSLError, urllib.error.URLError, OSError) as error:
         if TRANSPORT != "auto" or not _looks_like_tls_failure(error):
             raise
-        print(f"  {label}: python TLS failed ({getattr(error, 'reason', error)}); "
-              f"retrying through curl")
+        _TLS_BROKEN = True
+        print(f"  {label}: python TLS cannot negotiate ({getattr(error, 'reason', error)})")
+        print(f"  {label}: switching to curl for the rest of this run")
         return _via_curl(url, data)
 
 
