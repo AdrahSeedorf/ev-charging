@@ -1,0 +1,14 @@
+# Hume corridor towns. Charger counts from the legacy coursework; prices synthetic.
+id,name,has_station,price_per_kwh,chargers,power_kw
+0,Sydney,1,0.45,10,150.0
+1,Campbelltown,1,0.48,4,150.0
+2,Mittagong,1,0.55,3,150.0
+3,Goulburn,1,0.52,4,150.0
+4,Yass,1,0.58,2,150.0
+5,Gundagai,1,0.60,3,150.0
+6,Holbrook,1,0.62,2,150.0
+7,Albury,1,0.50,4,150.0
+8,Wangaratta,1,0.56,3,150.0
+9,Euroa,1,0.59,3,150.0
+10,Wallan,1,0.54,2,150.0
+11,Melbourne,1,0.44,8,150.0

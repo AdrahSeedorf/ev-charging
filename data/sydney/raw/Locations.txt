@@ -1,0 +1,24 @@
+Penrith,1,0.35
+St Marys,0,-1
+Box Hill,1,0
+Kellyville,0,-1
+Castle Hill,0,-1
+Blacktown,1,0.25
+Parramatta,1,0.25
+Olympic Park,1,0.4
+Burwood,1,0.46
+Randwick,1,0.50
+Bondi Junction,1,0.25
+Manly,1,0
+Chatswood,1,0.55
+Macquarie Pk,1,0.33
+Hornsby,0,-1
+Central,0,-1
+Hurstville,1,0.3
+Bankstown,1,0.52
+Liverpool,0,-1
+Leppington,0,-1
+Campbelltown,1,0.65
+Ryde,1,0.28
+Strathfield,1,0.30
+Fairfield,0,-1

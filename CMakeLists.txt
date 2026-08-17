@@ -38,3 +38,12 @@ else()
         target_compile_options(evnet_core PRIVATE -Werror)
     endif()
 endif()
+
+# Convenience: regenerate the datasets from their raw sources.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_FOUND)
+    add_custom_target(datasets
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/build_datasets.py
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Rebuilding data/ from raw legacy sources")
+endif()
