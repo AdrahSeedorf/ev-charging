@@ -52,6 +52,27 @@ jobs:
           git diff --exit-code -- data/ \
             || (echo "::error::Generated data differs from committed data" && exit 1)
 
+      - name: Ingest pipeline round-trips through the C++ core
+        run: |
+          python3 tools/fetch_real_network.py \
+            --offline-fixture tests/fixtures/overpass_sample.json \
+            --name fixture --out /tmp/fixture --demands 200
+          ./build/evnet inspect --network /tmp/fixture
+          ./build/evnet compare --network /tmp/fixture --demands /tmp/fixture/demands.csv
+          python3 tools/render_map.py --network /tmp/fixture --out /tmp/maps --name fixture
+          test -s /tmp/maps/fixture-map-light.svg
+
+      - name: Committed maps are reproducible
+        run: |
+          ./build/evnet simulate --network data/hume --demands data/hume/demands.csv \
+            --planner optimal --timeseries /tmp/humeload.csv
+          python3 tools/render_map.py --network data/hume --load /tmp/humeload.csv \
+            --title "Hume corridor charging network" \
+            --subtitle "Sydney to Melbourne, 891 km. Load from 199 journeys under the optimal planner." \
+            --out docs
+          git diff --exit-code -- docs/ \
+            || (echo "::error::Committed maps differ from freshly rendered ones" && exit 1)
+
       - name: Smoke-test the CLI
         run: |
           ./build/evnet inspect --network data/sydney
