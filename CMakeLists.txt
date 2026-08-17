@@ -20,7 +20,8 @@ option(EVNET_WERROR "Treat warnings as errors" OFF)
 # translation unit -- adding a second .cpp that included them would have produced
 # duplicate-symbol link errors.
 add_library(evnet_core STATIC
-        src/csv.cpp)
+        src/csv.cpp
+        src/network.cpp)
 
 target_include_directories(evnet_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
