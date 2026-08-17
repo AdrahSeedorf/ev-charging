@@ -65,6 +65,11 @@ USER_AGENT = "ev-network-toolkit/0.1 (+https://github.com/; research use, one re
 EFFICIENCY_KWH_PER_100KM = 18.0
 DAY_LENGTH_HOURS = 16.0
 
+# Shortest edge the schema will accept. Co-located stations are merged rather than
+# floored, so this is only a backstop against a pair that survives merging and still
+# rounds to zero at two decimal places.
+MIN_EDGE_KM = 0.01
+
 
 
 # --------------------------------------------------------------------------
@@ -265,6 +270,66 @@ def station_name(tags: dict, index: int) -> str:
     return f"Station {index}"
 
 
+def merge_colocated(stations: list[dict], within_m: float) -> list[dict]:
+    """Collapse stations at effectively the same spot into one.
+
+    Real OSM data contains the same physical site more than once: mapped as a node and
+    again as the car park polygon around it, or as two adjacent banks of chargers. Left
+    alone they produce edges of length zero, which the C++ loader rightly refuses --
+    "edge on line 295 has a non-positive distance" was exactly this.
+
+    Distance-flooring would have silenced the error while leaving the model wrong.
+    Merging is the accurate fix: two entries at one location are one site with the
+    combined number of chargers, which is also what a driver would find on arrival.
+    """
+    if within_m <= 0 or len(stations) < 2:
+        return stations
+
+    threshold_km = within_m / 1000.0
+    # Union-find over pairs closer than the threshold.
+    parent = list(range(len(stations)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    order = sorted(range(len(stations)), key=lambda i: (stations[i]["lat"], stations[i]["lon"]))
+    for a_pos, a in enumerate(order):
+        for b in order[a_pos + 1:]:
+            # Sorted by latitude, so once the latitude gap alone exceeds the threshold
+            # nothing further can be within it.
+            if (stations[b]["lat"] - stations[a]["lat"]) * 111.0 > threshold_km:
+                break
+            if great_circle_km(stations[a], stations[b]) <= threshold_km:
+                ra, rb = find(a), find(b)
+                if ra != rb:
+                    parent[max(ra, rb)] = min(ra, rb)
+
+    groups: dict[int, list[int]] = {}
+    for i in range(len(stations)):
+        groups.setdefault(find(i), []).append(i)
+
+    merged = []
+    for root in sorted(groups):
+        members = [stations[i] for i in groups[root]]
+        head = dict(members[0])
+        if len(members) > 1:
+            head["chargers"] = sum(m["chargers"] for m in members)
+            head["power_kw"] = max(m["power_kw"] for m in members)
+            head["merged_from"] = len(members)
+            head["osm_id"] = ";".join(m["osm_id"] for m in members)[:120]
+        merged.append(head)
+
+    collapsed = len(stations) - len(merged)
+    if collapsed:
+        print(f"  merged {collapsed} duplicate entr{'y' if collapsed == 1 else 'ies'} "
+              f"within {within_m:.0f} m into {sum(1 for m in merged if m.get('merged_from'))} "
+              f"site(s); chargers summed")
+    return merged
+
+
 def extract_stations(payload: dict, max_stations: int, seed: int) -> list[dict]:
     stations = []
     for element in payload.get("elements", []):
@@ -459,7 +524,7 @@ def build_edges(stations: list[dict], matrix: list[list[float]] | None,
         distances.sort()
         for road, j in distances[:neighbours]:
             key = (min(i, j), max(i, j))
-            pairs[key] = min(pairs.get(key, float("inf")), road)
+            pairs[key] = max(MIN_EDGE_KM, min(pairs.get(key, float("inf")), road))
 
     edges = [{"from_id": a, "to_id": b, "distance_km": f"{d:.2f}"}
              for (a, b), d in sorted(pairs.items())]
@@ -575,6 +640,9 @@ def main() -> int:
     parser.add_argument("--max-stations", type=int, default=250,
                         help="cap on stations; requests are tiled, so this is about "
                              "runtime rather than any API limit [250]")
+    parser.add_argument("--merge-within-m", type=float, default=50.0,
+                        help="collapse stations closer than this into one site, summing "
+                             "their chargers; OSM maps the same site more than once [50]")
     parser.add_argument("--neighbours", type=int, default=4,
                         help="edges kept per station, nearest first [4]")
     parser.add_argument("--demands", type=int, default=400)
@@ -628,7 +696,11 @@ def main() -> int:
                         args.cache / f"{args.name}-overpass.json", "Overpass")
 
     stations = extract_stations(payload, args.max_stations, args.seed)
-    print(f"  {len(stations)} charging stations")
+    print(f"  {len(stations)} charging stations from OSM")
+    stations = merge_colocated(stations, args.merge_within_m)
+    print(f"  {len(stations)} distinct sites")
+    for index, station in enumerate(stations):
+        station["id"] = index
 
     matrix = None
     if not args.no_osrm and not args.offline_fixture:
@@ -656,6 +728,7 @@ def main() -> int:
         "chargers": s["chargers"], "power_kw": f"{s['power_kw']:.1f}",
         "latitude": f"{s['lat']:.5f}", "longitude": f"{s['lon']:.5f}",
         "osm_id": s["osm_id"], "operator": s["operator"],
+        "merged_from": s.get("merged_from", 1),
     } for s in stations]
 
     source = "an Overpass fixture" if args.offline_fixture else f"OpenStreetMap, bbox {bbox}"
