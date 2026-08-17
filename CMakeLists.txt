@@ -24,6 +24,7 @@ add_library(evnet_core STATIC
         src/candidates.cpp
         src/csv.cpp
         src/network.cpp
+        src/planner.cpp
         src/policy.cpp
         src/router.cpp
         src/simulation.cpp
