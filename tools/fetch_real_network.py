@@ -36,7 +36,11 @@ import csv
 import json
 import math
 import random
+import shutil
+import ssl
+import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -60,6 +64,78 @@ USER_AGENT = "ev-network-toolkit/0.1 (+https://github.com/; research use, one re
 
 EFFICIENCY_KWH_PER_100KM = 18.0
 DAY_LENGTH_HOURS = 16.0
+
+
+
+# --------------------------------------------------------------------------
+# Transport
+# --------------------------------------------------------------------------
+
+
+def _looks_like_tls_failure(error: BaseException) -> bool:
+    text = str(getattr(error, "reason", error)).lower()
+    return any(token in text for token in
+               ("ssl", "tls", "handshake", "certificate", "cert_", "eof occurred"))
+
+
+def _via_urllib(url: str, data: bytes | None) -> dict:
+    request = urllib.request.Request(url, data=data, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=180) as response:
+        return json.loads(response.read().decode())
+
+
+def _via_curl(url: str, data: bytes | None) -> dict:
+    """Same request through curl.
+
+    Python on macOS is frequently linked against an OpenSSL that some hosts refuse to
+    negotiate with, which surfaces as SSLV3_ALERT_HANDSHAKE_FAILURE against a server
+    that is demonstrably up. curl links a different TLS stack, so it commonly succeeds
+    where urllib cannot -- and it is already present on macOS and most Linux images.
+    """
+    curl = shutil.which("curl")
+    if curl is None:
+        raise RuntimeError("curl is not installed, so there is no alternative transport")
+
+    command = [curl, "-sS", "--fail-with-body", "--max-time", "180",
+               "-A", USER_AGENT, "-H", "Accept: application/json"]
+    handle = None
+    try:
+        if data is not None:
+            handle = tempfile.NamedTemporaryFile("wb", suffix=".post", delete=False)
+            handle.write(data)
+            handle.close()
+            command += ["--data-binary", f"@{handle.name}"]
+        command.append(url)
+        finished = subprocess.run(command, capture_output=True, timeout=200)
+    finally:
+        if handle is not None:
+            Path(handle.name).unlink(missing_ok=True)
+
+    if finished.returncode != 0:
+        raise RuntimeError(f"curl exited {finished.returncode}: "
+                           f"{finished.stderr.decode(errors='replace').strip()[:300]}")
+    try:
+        return json.loads(finished.stdout.decode())
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"curl returned something that is not JSON: "
+                           f"{finished.stdout.decode(errors='replace')[:200]}") from error
+
+
+TRANSPORT = "auto"  # set from --transport
+
+
+def request_json(url: str, data: bytes | None, label: str) -> dict:
+    """One HTTP call, falling back to curl when Python's TLS will not negotiate."""
+    if TRANSPORT == "curl":
+        return _via_curl(url, data)
+    try:
+        return _via_urllib(url, data)
+    except (ssl.SSLError, urllib.error.URLError, OSError) as error:
+        if TRANSPORT != "auto" or not _looks_like_tls_failure(error):
+            raise
+        print(f"  {label}: python TLS failed ({getattr(error, 'reason', error)}); "
+              f"retrying through curl")
+        return _via_curl(url, data)
 
 
 # --------------------------------------------------------------------------
@@ -91,10 +167,8 @@ def fetch(url: str, data: bytes | None, cache: Path, label: str) -> dict:
         return json.loads(cache.read_text())
 
     print(f"  {label}: requesting (this is the only call; the result is cached)")
-    request = urllib.request.Request(url, data=data, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=180) as response:
-            payload = json.loads(response.read().decode())
+        payload = request_json(url, data, label)
     except urllib.error.HTTPError as error:
         detail = error.read().decode(errors="replace")[:400]
         raise SystemExit(
@@ -103,8 +177,9 @@ def fetch(url: str, data: bytes | None, cache: Path, label: str) -> dict:
             f"  Both services are volunteer-run and rate-limited. Wait a few minutes "
             f"rather than retrying immediately."
         ) from error
-    except urllib.error.URLError as error:
-        raise SystemExit(f"error: could not reach {label}: {error.reason}") from error
+    except (urllib.error.URLError, RuntimeError, OSError) as error:
+        raise SystemExit(f"error: could not reach {label}: "
+                         f"{getattr(error, 'reason', error)}") from error
 
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps(payload))
@@ -246,9 +321,7 @@ def osrm_tile(base: str, stations: list[dict], rows: list[int],
         "destinations": ";".join(str(position[c]) for c in cols),
     })
 
-    request = urllib.request.Request(f"{base}{coords}?{query}", headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=180) as response:
-        payload = json.loads(response.read().decode())
+    payload = request_json(f"{base}{coords}?{query}", None, "OSRM")
     if payload.get("code") != "Ok":
         raise RuntimeError(f"OSRM replied {payload.get('code')}: {payload.get('message')}")
     distances = payload.get("distances")
@@ -285,7 +358,8 @@ def fetch_road_distances(stations: list[dict], cache: Path) -> list[list[float |
             base = candidate
             print(f"  OSRM: using {label}, {len(tiles)} tile request(s) to make")
             break
-        except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, OSError) as error:
+        except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError,
+                ssl.SSLError, OSError) as error:
             reason = getattr(error, "reason", error)
             print(f"  OSRM: {label} unavailable ({reason})")
             problems.append(f"{label}: {reason}")
@@ -294,7 +368,8 @@ def fetch_road_distances(stations: list[dict], cache: Path) -> list[list[float |
         raise SystemExit(
             "error: no OSRM endpoint could be reached.\n  "
             + "\n  ".join(problems)
-            + "\n\n  Re-run with --no-osrm to estimate distances from geometry instead."
+            + "\n\n  If those mention TLS or a handshake, try --transport curl."
+            "\n  Otherwise re-run with --no-osrm to estimate distances from geometry."
             "\n  Straight-line distance times 1.35 is a reasonable stand-in, and the"
             "\n  output records that the edges are estimated rather than measured."
         )
@@ -312,7 +387,8 @@ def fetch_road_distances(stations: list[dict], cache: Path) -> list[list[float |
         print(f"  OSRM: tile {number}/{len(tiles)}", end="\r", flush=True)
         try:
             store(rows, cols, osrm_tile(base, stations, rows, cols))
-        except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, OSError) as error:
+        except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError,
+                ssl.SSLError, OSError) as error:
             # A tile that fails leaves its pairs as None, and build_edges falls back to
             # geometry for those. Better a partly-measured matrix than none at all.
             print(f"\n  OSRM: tile {number} failed ({getattr(error, 'reason', error)}); "
@@ -496,6 +572,11 @@ def main() -> int:
     parser.add_argument("--price", type=float, default=0.55,
                         help="price per kWh, since OSM rarely records tariffs [0.55]")
     parser.add_argument("--seed", type=int, default=20260817)
+    parser.add_argument("--transport", choices=("auto", "urllib", "curl"), default="auto",
+                        help="how to make HTTP calls. 'auto' uses Python and falls back "
+                             "to curl on a TLS failure, which is the usual cure for "
+                             "SSLV3_ALERT_HANDSHAKE_FAILURE against a host that is up "
+                             "[auto]")
     parser.add_argument("--no-osrm", action="store_true",
                         help="skip routing; estimate distances from geometry instead")
     args = parser.parse_args()
@@ -522,7 +603,12 @@ def main() -> int:
         # Overpass wants south,west,north,east in exactly this order.
         bbox = f"{south},{west},{north},{east}"
 
+    global TRANSPORT
+    TRANSPORT = args.transport
+
     print(f"Building '{args.name}'")
+    if TRANSPORT != "auto":
+        print(f"  transport: {TRANSPORT} (forced)")
     if args.offline_fixture:
         print(f"  Overpass: reading fixture {args.offline_fixture}")
         payload = json.loads(args.offline_fixture.read_text())

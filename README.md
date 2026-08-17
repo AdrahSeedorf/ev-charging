@@ -306,6 +306,12 @@ The bounding box is `south west north east`. Space-separated as above, or
 `--bbox -34.15,...` cannot work, because argparse reads a leading minus as an option
 flag.
 
+If a request dies with `SSLV3_ALERT_HANDSHAKE_FAILURE` against a host that is plainly
+up, that is Python's TLS stack rather than the server — common with the OpenSSL some
+macOS Python builds link against. The tool detects it and retries through `curl`
+automatically; `--transport curl` forces it, and `--no-osrm` skips routing entirely and
+estimates distances from geometry.
+
 Neither service needs a key, and both are volunteer-run: the script makes exactly one
 call to each, caches the responses, and will not re-request while a cache file exists.
 Please leave that alone. To rehearse the whole pipeline without touching the network:
