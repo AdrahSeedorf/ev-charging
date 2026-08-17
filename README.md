@@ -26,6 +26,14 @@ optimal              199         0     $173.56       0.02h      0.16h      0.43h
 That table is the point of the project. Five strategies, one feasibility model, and
 a genuine disagreement about what "best" means.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/hume-map-dark.svg">
+  <img alt="The Hume corridor from Sydney to Melbourne, with each town's charger load. Goulburn, Yass and Albury are darkest, at full utilisation." src="docs/hume-map-light.svg">
+</picture>
+
+And this is why it is worth having a map as well as a table. Load concentrates in the
+middle of the corridor, not at the ends where the hardware is.
+
 ---
 
 ## Why this exists
@@ -179,6 +187,50 @@ Related, from stage 1 and still true: greedy price minimisation is expensively
 myopic. A 67 kWh vehicle running `cheapest` takes eight short hops to save $2.32 of
 energy against `farthest`'s two.
 
+### 5. The corridor's capacity is in the wrong places
+
+Under the optimal planner, three mid-corridor towns run out of chargers entirely while
+the endpoints idle:
+
+| town | chargers | peak load | mean load |
+|---|---|---|---|
+| Goulburn | 4 | **100%** | 31% |
+| Yass | 2 | **100%** | 12% |
+| Albury | 4 | **100%** | 33% |
+| … | | | |
+| Melbourne | 8 | 25% | 2% |
+| Sydney | 10 | 20% | 2% |
+
+Wangaratta, Euroa and Wallan are never used at all. A quarter of the corridor's
+stations sit idle while the towns vehicles actually need are saturated — the endpoints
+hold the most hardware and see the least demand, because that is where vehicles start
+out full. Obvious on the map above; invisible in the fleet summary.
+
+### 6. Two inherited distances are geometrically impossible
+
+Straight-line distance is a hard lower bound on road distance — no road is shorter than
+the line it spans — which gives a validity check with nothing to tune. Two of the
+legacy Sydney edges fail it:
+
+| edge | recorded road | straight line |
+|---|---|---|
+| Randwick ↔ Hurstville | 13.1 km | 14.1 km |
+| Bankstown ↔ Fairfield | 8.2 km | 8.9 km |
+
+That is the third distinct class of defect in that one matrix, after the missing value
+and the five asymmetric pairs.
+
+Neither is corrected in the shipped data, deliberately. Both fail by only 7–8%, which
+is inside the error of a suburb centroid, so the coordinate is as likely a suspect as
+the distance — and inventing a replacement road distance would be worse than reporting
+the problem. `tools/fetch_real_network.py` settles it with surveyed positions and real
+routing.
+
+The same check validates the coordinates themselves: median detour ratio comes out
+**1.18 on the highway and 1.39 in the metro network**, which is the correct ordering and
+about the right magnitude for each. Had either the coordinates or the distances been
+badly wrong, they would not agree that closely.
+
 ## Data quality: what the raw inputs got wrong
 
 The legacy Sydney distance matrix had two defects, both silent:
@@ -213,7 +265,7 @@ network access; later builds do not.
 ```bash
 cmake --preset debug          # or: release
 cmake --build --preset debug --parallel
-ctest --preset debug          # 72 tests, 1208 assertions
+ctest --preset debug          # 74 tests, 1218 assertions
 ./build/debug/evnet compare --network data/hume --demands data/hume/demands.csv
 ```
 
@@ -232,6 +284,48 @@ pushing.
 Warnings are visible in `debug` but not fatal. That is deliberate: `-Werror` in the
 everyday build means a compiler upgrade can stop you working over something
 cosmetic. CI enforces it instead, across GCC, Clang and Apple Clang.
+
+### Working with real data
+
+The shipped Sydney charger counts are documented estimates. To replace them with
+surveyed ones:
+
+```bash
+# Charging stations from OpenStreetMap, road distances from OSRM
+python3 tools/fetch_real_network.py --bbox -34.15,150.60,-33.55,151.35 \
+    --name sydney-real --out data/sydney-real
+
+./build/debug/evnet inspect --network data/sydney-real      # validator runs on it too
+./build/debug/evnet compare --network data/sydney-real \
+    --demands data/sydney-real/demands.csv
+python3 tools/render_map.py --network data/sydney-real --out docs --name sydney-real
+```
+
+Neither service needs a key, and both are volunteer-run: the script makes exactly one
+call to each, caches the responses, and will not re-request while a cache file exists.
+Please leave that alone. To rehearse the whole pipeline without touching the network:
+
+```bash
+python3 tools/fetch_real_network.py \
+    --offline-fixture tests/fixtures/overpass_sample.json --name fixture --out /tmp/fixture
+```
+
+Real data is not clean data. Run `inspect` on whatever comes back — the geometric
+validator applies to fetched edges exactly as it does to the inherited ones.
+
+### Maps
+
+```bash
+./build/debug/evnet simulate --network data/hume --demands data/hume/demands.csv \
+    --planner optimal --timeseries out/load.csv
+python3 tools/render_map.py --network data/hume --load out/load.csv --out docs
+```
+
+Emits a light and a dark SVG for documentation, plus an interactive HTML page with
+hover detail and a table view carrying the same figures. Station load gets a
+sequential single-hue ramp because it is a magnitude; station-versus-waypoint is
+encoded by shape rather than a second hue, so colour does exactly one job. Both ramps
+were checked with a palette validator rather than by eye.
 
 ### Developing in VS Code
 
@@ -325,9 +419,10 @@ clock where vehicles occupy a charger for a duration and then release it.
       driving time, release-time profiles, per-stop overhead, time-series and
       per-trip CSV export, and an optimal planner over `(node, charge)` state.
       71 tests.
-- [ ] **Stage 3 — real data.** OpenStreetMap road distances and open charger
-      datasets in place of synthetic figures, with a rendered map and a written-up
-      finding.
+- [x] **Stage 3 — real data.** Real coordinates for all 36 places, a geometric
+      validator that catches impossible distances, rendered light/dark maps, and an
+      OSM + OSRM ingestion pipeline that replaces the estimated figures with surveyed
+      ones. 74 tests.
 - [ ] **Stage 4 — second domain.** Demonstrate the core is domain-agnostic.
 
 ## Beyond EVs
