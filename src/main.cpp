@@ -321,9 +321,12 @@ std::vector<Demand> loadDemands(const Options& options) {
 /// never depart, so wait figures are a comparable congestion index rather than a
 /// predicted duration. Saying so in the output is cheaper than having someone
 /// quote a 50-hour queue back at us.
-void printWaitCaveat() {
+/// STATIC ENGINE ONLY. Under the event-driven clock waits are measured durations and
+/// this note would be a lie -- it was written when the tally was the only engine there
+/// was, and `site` printed it over measured hours for exactly one commit.
+void printStaticWaitCaveat() {
     std::cout << "\nnote: waits are a relative congestion index, not predicted hours -- arrivals\n"
-                 "      accumulate without departing until the event-driven clock lands.\n";
+                 "      accumulate without departing until they are counted.\n";
 }
 
 void printSummaryHeader() {
@@ -584,7 +587,7 @@ int cmdSimulateStatic(const Options& options) {
             std::cout << "  demand " << result.demandId << ": " << result.failure << "\n";
         }
     }
-    printWaitCaveat();
+    printStaticWaitCaveat();
     if (options.verbose) {
         std::cout << "Dijkstra runs: " << router.computations() << " (one per distinct origin, cached)\n";
     }
@@ -644,50 +647,93 @@ int cmdCompareStatic(const Options& options) {
                  })
               << "\nlowest generalised  " << bestBy([](const Summary& s) { return s.meanGeneralisedCost; })
               << "\n";
-    printWaitCaveat();
+    printStaticWaitCaveat();
     return 0;
 }
 
-int cmdSite(const Options& options) {
-    const Network network = loadNetwork(options);
-    const auto demands = loadDemands(options);
-    const auto policy = makePolicy(options.policy, options.valueOfTime);
-
-    const Siting siting(network, makeConfig(options));
-    const Summary base = siting.baseline(demands, *policy);
-
+Station sitePrototype(const Options& options) {
     Station prototype;
     prototype.pricePerKwh = options.newStationPrice;
     prototype.chargers = options.newStationChargers;
     prototype.powerKw = options.newStationPower;
+    return prototype;
+}
 
-    const auto scores = siting.rank(demands, *policy, prototype, options.top);
-
+void printSiteHeading(const Options& options, const Station& prototype, std::size_t fleet,
+                      const std::string& plannerName) {
     std::cout << "Siting a new station (" << prototype.chargers << " chargers, "
               << static_cast<int>(prototype.powerKw) << " kW, " << money(prototype.pricePerKwh)
-              << "/kWh) for a fleet of " << demands.size() << "\n"
-              << "Policy: " << policy->name() << ", time valued at " << money(options.valueOfTime)
+              << "/kWh) for a fleet of " << fleet << "\n"
+              << (options.engine == "events" ? "Engine: event-driven clock at "
+                                            : "Engine: static tally (no clock), ")
+              << (options.engine == "events" ? std::to_string(static_cast<int>(options.speedKmh)) +
+                                                   " km/h"
+                                            : std::string("kept for comparison"))
+              << "\n"
+              << "Planner: " << plannerName << ", time valued at " << money(options.valueOfTime)
               << "/h\n\n";
+}
 
-    printSummaryHeader();
-    printSummaryRow(base);
-    std::cout << "\nCandidate sites, best first\n"
+void printSiteTable(const std::vector<SiteScore>& scores, Dollars baseGeneralisedCost) {
+    std::cout << "\nCandidate sites, best first (most trips completed, then lowest cost)\n"
               << std::left << std::setw(18) << "site" << std::right << std::setw(10) << "completed"
               << std::setw(14) << "mean gen $" << std::setw(12) << "vs base" << std::setw(12)
               << "mean wait" << std::setw(9) << "peak Q" << std::setw(11) << "uptake\n";
     std::cout << std::string(86, '-') << "\n";
     for (const auto& score : scores) {
-        const Dollars delta = score.meanGeneralisedCost - base.meanGeneralisedCost;
+        const Dollars delta = score.meanGeneralisedCost - baseGeneralisedCost;
         std::ostringstream deltaText;
         deltaText << (delta <= 0 ? "" : "+") << std::fixed << std::setprecision(2) << delta;
+        // Never round a real share to "0%". One vehicle in 400 is 0.25% and two is
+        // 0.50%; both printed as "0%" and read as "nobody used this station", so a site
+        // that had genuinely changed a journey looked like it had changed none, and the
+        // cost difference beside it looked like a defect in the model rather than its
+        // consequence. It cost an afternoon of hunting a leak that was not there.
+        // "<1%" is the honest rendering of a small nonzero share; 0% now means zero.
         std::ostringstream uptake;
-        uptake << std::fixed << std::setprecision(0) << score.adoptionShare * 100.0 << "%";
+        if (score.adoptionShare > 0.0 && score.adoptionShare * 100.0 < 1.0) {
+            uptake << "<1%";
+        } else {
+            uptake << std::fixed << std::setprecision(0) << score.adoptionShare * 100.0 << "%";
+        }
         std::cout << std::left << std::setw(18) << score.name << std::right << std::setw(10)
                   << score.completed << std::setw(14) << money(score.meanGeneralisedCost)
                   << std::setw(12) << deltaText.str() << std::setw(12)
                   << hoursText(score.meanWaitHours) << std::setw(9) << score.peakQueue
                   << std::setw(11) << uptake.str() << "\n";
     }
+}
+
+int cmdSiteStatic(const Options& options) {
+    const Network network = loadNetwork(options);
+    const auto demands = loadDemands(options);
+    const auto policy = makePolicy(options.policy, options.valueOfTime);
+
+    const Siting siting(network, makeConfig(options));
+    const Summary base = siting.baseline(demands, *policy);
+    const Station prototype = sitePrototype(options);
+    const auto scores = siting.rank(demands, *policy, prototype, options.top);
+
+    printSiteHeading(options, prototype, demands.size(), policy->name());
+    printSummaryHeader();
+    printSummaryRow(base);
+    printSiteTable(scores, base.meanGeneralisedCost);
+    return 0;
+}
+
+int cmdSiteEvents(const Options& options) {
+    const Network network = loadNetwork(options);
+    const auto demands = loadDemands(options);
+
+    const Siting siting(network, makeSimulatorConfig(options));
+    const TimedSummary base = siting.baselineTimed(demands, options.policy);
+    const Station prototype = sitePrototype(options);
+    const auto scores = siting.rankTimed(demands, options.policy, prototype, options.top);
+
+    printSiteHeading(options, prototype, demands.size(), base.planner);
+    printTimedHeader();
+    printTimedRow(base);
+    printSiteTable(scores, base.meanGeneralisedCost);
     return 0;
 }
 
@@ -708,7 +754,11 @@ int main(int argc, char** argv) {
             if (options.engine == "static") return cmdCompareStatic(options);
             fail("unknown engine '" + options.engine + "' (expected events or static)");
         }
-        if (options.command == "site") return cmdSite(options);
+        if (options.command == "site") {
+            if (options.engine == "events") return cmdSiteEvents(options);
+            if (options.engine == "static") return cmdSiteStatic(options);
+            fail("unknown engine '" + options.engine + "' (expected events or static)");
+        }
         std::cerr << "error: unknown command '" << options.command << "'\n\n";
         printUsage();
         return 2;
