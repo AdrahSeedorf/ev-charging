@@ -15,6 +15,7 @@ namespace {
 SimulatorConfig fastConfig() {
     SimulatorConfig config;
     config.speedKmh = 100.0;      // 100 km per hour keeps the arithmetic legible
+    config.stopOverheadHours = 0.0;  // isolate queueing from session overhead
     return config;
 }
 
@@ -33,7 +34,7 @@ TEST_CASE("driving consumes wall-clock time", "[simulator]") {
     const Simulator simulator(network, router, fastConfig());
     auto planner = greedy(network, router, "cheapest", fastConfig());
 
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({testing::corridorJourney()}, *planner, runtime);
 
     REQUIRE(trips.size() == 1);
@@ -53,7 +54,7 @@ TEST_CASE("release times are honoured", "[simulator]") {
     Demand late = testing::corridorJourney();
     late.releaseHour = 6.0;
 
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({late}, *planner, runtime);
 
     REQUIRE(trips[0].completed);
@@ -69,7 +70,7 @@ TEST_CASE("a lone vehicle never queues", "[simulator]") {
     const Simulator simulator(network, router, fastConfig());
     auto planner = greedy(network, router, "cheapest", fastConfig());
 
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({testing::corridorJourney()}, *planner, runtime);
     CHECK_THAT(trips[0].waitHours, WithinAbs(0.0, 1e-9));
     CHECK(trips[0].chargeHours > 0.0);
@@ -91,9 +92,9 @@ TEST_CASE("simultaneous departures queue, staggered ones do not", "[simulator]")
     std::vector<Demand> spread = together;
     for (std::size_t i = 0; i < spread.size(); ++i) spread[i].releaseHour = static_cast<Hours>(i) * 8.0;
 
-    StationRuntime crowdedRuntime(network);
+    StationRuntime crowdedRuntime(network, 0.0);
     const auto crowded = simulator.run(together, *planner, crowdedRuntime);
-    StationRuntime spreadRuntime(network);
+    StationRuntime spreadRuntime(network, 0.0);
     const auto relaxed = simulator.run(spread, *planner, spreadRuntime);
 
     const auto meanWait = [](const std::vector<TimedTrip>& trips) {
@@ -114,7 +115,7 @@ TEST_CASE("energy balances across an event-driven trip", "[simulator]") {
     auto planner = greedy(network, router, "cheapest", fastConfig());
 
     const Demand demand = testing::corridorJourney();
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({demand}, *planner, runtime);
     REQUIRE(trips[0].completed);
 
@@ -134,7 +135,7 @@ TEST_CASE("every charging session in a trip has a matching service record", "[si
     std::vector<Demand> fleet(15, testing::corridorJourney());
     for (std::size_t i = 0; i < fleet.size(); ++i) fleet[i].id = static_cast<int>(i);
 
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run(fleet, *planner, runtime);
 
     std::size_t stops = 0;
@@ -156,11 +157,11 @@ TEST_CASE("the simulation is deterministic", "[simulator]") {
     }
 
     auto first = greedy(network, router, "generalised", fastConfig());
-    StationRuntime runtimeA(network);
+    StationRuntime runtimeA(network, 0.0);
     const auto a = simulator.run(fleet, *first, runtimeA);
 
     auto second = greedy(network, router, "generalised", fastConfig());
-    StationRuntime runtimeB(network);
+    StationRuntime runtimeB(network, 0.0);
     const auto b = simulator.run(fleet, *second, runtimeB);
 
     REQUIRE(a.size() == b.size());
@@ -181,7 +182,7 @@ TEST_CASE("a vehicle that cannot move is reported, not lost", "[simulator]") {
     Demand stuck = testing::corridorJourney();
     stuck.socKwh = 5.0;  // 27 km of range; the nearest station is 100 km off
 
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({stuck}, *planner, runtime);
     CHECK_FALSE(trips[0].completed);
     CHECK(trips[0].failure.find("stranded") != std::string::npos);
@@ -203,13 +204,73 @@ TEST_CASE("top-up missions run through the event engine too", "[simulator]") {
     topUp.efficiency = 18.0;
     topUp.requiredKwh = 15.0;
 
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({topUp}, *planner, runtime);
     REQUIRE(trips[0].completed);
     REQUIRE(trips[0].stops.size() == 1);
     CHECK(network.node(trips[0].stops[0].node).name == "Mid1");
     CHECK_THAT(trips[0].distanceKm, WithinAbs(200.0, 1e-9));  // out and back
     CHECK_THAT(trips[0].drivingHours, WithinAbs(2.0, 1e-9));  // 200 km at 100 km/h
+}
+
+TEST_CASE("the optimal planner beats greedy on generalised cost when uncongested",
+          "[simulator][planner]") {
+    // With an empty network there is no forecasting error to trip over, so lookahead
+    // should be a straight win. The corridor gives it something to work with: Mid1 is
+    // cheap, Mid2 is dear, and a greedy price-chaser stops more often than it needs to.
+    const Network network = testing::corridor();
+    const Router router(network);
+    SimulatorConfig config = fastConfig();
+    config.stopOverheadHours = 0.25;  // stops cost something, as they do in reality
+
+    const Simulator simulator(network, router, config);
+    Demand demand = testing::corridorJourney();
+    demand.batteryKwh = 40.0;
+    demand.socKwh = 20.0;
+
+    Dollars bestGreedy = std::numeric_limits<Dollars>::infinity();
+    for (const auto& name : {"farthest", "cheapest", "min-wait", "generalised"}) {
+        auto planner = makePlanner(name, network, router, config.valueOfTimePerHour,
+                                   config.feasibility());
+        StationRuntime runtime(network, config.stopOverheadHours);
+        const auto trips = simulator.run({demand}, *planner, runtime);
+        REQUIRE(trips[0].completed);
+        bestGreedy = std::min(bestGreedy, trips[0].generalisedCost(config.valueOfTimePerHour));
+    }
+
+    auto optimal = makePlanner("optimal", network, router, config.valueOfTimePerHour,
+                               config.feasibility());
+    StationRuntime runtime(network, config.stopOverheadHours);
+    const auto trips = simulator.run({demand}, *optimal, runtime);
+    REQUIRE(trips[0].completed);
+    CHECK(trips[0].generalisedCost(config.valueOfTimePerHour) <= bestGreedy + 1e-6);
+}
+
+TEST_CASE("session overhead makes fewer, larger stops preferable", "[planner]") {
+    // Without a per-stop cost the model is indifferent to fragmentation, because
+    // total energy -- and so total transfer time -- is fixed by the distance. The
+    // optimal planner exploited that precisely as it should have, splitting one
+    // charge into six. This pins the fix.
+    const Network network = testing::corridor();
+    const Router router(network);
+
+    Demand demand = testing::corridorJourney();
+    demand.batteryKwh = 40.0;
+    demand.socKwh = 20.0;
+
+    const auto stopsWithOverhead = [&](Hours overhead) {
+        SimulatorConfig config = fastConfig();
+        config.stopOverheadHours = overhead;
+        const Simulator simulator(network, router, config);
+        auto planner = makePlanner("optimal", network, router, config.valueOfTimePerHour,
+                                   config.feasibility());
+        StationRuntime runtime(network, overhead);
+        const auto trips = simulator.run({demand}, *planner, runtime);
+        REQUIRE(trips[0].completed);
+        return trips[0].stops.size();
+    };
+
+    CHECK(stopsWithOverhead(0.5) <= stopsWithOverhead(0.0));
 }
 
 TEST_CASE("planner factory covers every advertised planner", "[planner]") {
@@ -229,7 +290,7 @@ TEST_CASE("planners agree that a vehicle with plenty of charge should just drive
           "[planner]") {
     const Network network = testing::corridor();
     const Router router(network);
-    const StationRuntime runtime(network);
+    const StationRuntime runtime(network, 0.0);
 
     VehicleState vehicle;
     vehicle.at = 0;
@@ -254,7 +315,7 @@ TEST_CASE("the time series samples every station across the window", "[simulator
     std::vector<Demand> fleet(8, testing::corridorJourney());
     for (std::size_t i = 0; i < fleet.size(); ++i) fleet[i].id = static_cast<int>(i);
 
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run(fleet, *planner, runtime);
     const TimedSummary summary = simulator.summarise(trips, runtime, "cheapest");
 

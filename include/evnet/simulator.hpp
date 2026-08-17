@@ -72,6 +72,7 @@ struct SimulatorConfig {
     /// Average road speed. Stage 1 had no clock, so driving was instantaneous and
     /// nothing ever spread across a day.
     double speedKmh{80.0};
+    Hours stopOverheadHours{0.1};
     int maxStepsPerVehicle{40};
 
     FeasibilityConfig feasibility() const {
@@ -79,6 +80,7 @@ struct SimulatorConfig {
         out.travelCostPerKm = travelCostPerKm;
         out.reserveFraction = reserveFraction;
         out.speedKmh = speedKmh;
+        out.stopOverheadHours = stopOverheadHours;
         return out;
     }
 };

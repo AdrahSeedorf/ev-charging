@@ -184,7 +184,8 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
         if (here.hasStation() && here.station->chargers > 0) {
             for (std::size_t target = level + 1; target < levelCount; ++target) {
                 const Kwh energy = static_cast<double>(target - level) * step;
-                const Hours duration = chargeDuration(energy, here.station->powerKw);
+                const Hours duration =
+                    config_.stopOverheadHours + chargeDuration(energy, here.station->powerKw);
                 const Dollars added = energy * here.station->pricePerKwh +
                                       (waitAt[node] + duration) * valueOfTime_;
                 relax(index(node, target), added, Move::Charge);

@@ -19,6 +19,16 @@ struct FeasibilityConfig {
     /// *when* a vehicle turns up at a candidate station, which is what makes a
     /// time-dependent wait estimate possible.
     double speedKmh{80.0};
+    /// Fixed time cost of a charging session, on top of the energy transfer:
+    /// leaving the road, parking, plugging in, paying, and getting going again.
+    ///
+    /// Without this the model is INDIFFERENT to how many stops a journey makes,
+    /// because total energy and therefore total transfer time are fixed by the
+    /// distance. The optimal planner exploited that exactly as it should have,
+    /// fragmenting one charge into six identically-priced ones. Six minutes of
+    /// overhead per session is both physically real and enough to make fewer,
+    /// larger stops genuinely preferable.
+    Hours stopOverheadHours{0.1};
 };
 
 /// A vehicle's situation at the moment a charging decision is needed.

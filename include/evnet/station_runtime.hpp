@@ -40,7 +40,10 @@ struct ServiceRecord {
 /// FinishCharge events at all -- one event type suffices.
 class StationRuntime : public WaitOracle {
 public:
-    explicit StationRuntime(const Network& network);
+    /// `stopOverheadHours` is added to every session's duration, so it occupies the
+    /// charger and delays whoever is behind -- which is what makes it a real cost
+    /// rather than a bookkeeping entry.
+    explicit StationRuntime(const Network& network, Hours stopOverheadHours = 0.1);
 
     /// Estimated queueing delay for a vehicle reaching `node` at `arrivalTime`,
     /// given everything committed so far. This is what planners consult; unlike
@@ -75,6 +78,7 @@ public:
 
 private:
     const Network* network_;
+    Hours stopOverhead_;
     /// Per node, per charger: the time that charger next becomes free.
     std::vector<std::vector<Hours>> chargerFreeAt_;
     std::vector<std::vector<ServiceRecord>> records_;

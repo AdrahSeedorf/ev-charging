@@ -24,7 +24,7 @@ Network singleStation(int chargers) {
 
 TEST_CASE("an idle station imposes no wait", "[runtime]") {
     const Network network = singleStation(2);
-    const StationRuntime runtime(network);
+    const StationRuntime runtime(network, 0.0);
     CHECK_THAT(runtime.expectedWait(0, 0.0), WithinAbs(0.0, 1e-12));
     CHECK_THAT(runtime.expectedWait(0, 5.0), WithinAbs(0.0, 1e-12));
     CHECK(runtime.records(0).empty());
@@ -32,7 +32,7 @@ TEST_CASE("an idle station imposes no wait", "[runtime]") {
 
 TEST_CASE("chargers are used in parallel before anyone queues", "[runtime]") {
     const Network network = singleStation(2);
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
 
     // Two vehicles, two chargers: neither waits.
     const auto first = runtime.admit(0, 1, 0.0, 100.0);   // 1.0h of charging
@@ -53,7 +53,7 @@ TEST_CASE("waits are measured, and vanish for a late enough arrival", "[runtime]
     // grew, so a vehicle turning up after the rush was charged for congestion that
     // had long since cleared.
     const Network network = singleStation(1);
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
 
     runtime.admit(0, 1, 0.0, 100.0);  // occupies the single charger until t=1.0
     CHECK_THAT(runtime.expectedWait(0, 0.0), WithinAbs(1.0, 1e-12));
@@ -71,7 +71,7 @@ TEST_CASE("earliest-free assignment reproduces station-wide FIFO", "[runtime]") 
     // across the station; this checks the consequence, that start times are
     // nondecreasing in arrival order and nobody overtakes.
     const Network network = singleStation(3);
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
 
     std::vector<ServiceRecord> served;
     for (int i = 0; i < 12; ++i) {
@@ -86,9 +86,24 @@ TEST_CASE("earliest-free assignment reproduces station-wide FIFO", "[runtime]") 
     CHECK(served[3].wait() > 0.0);
 }
 
+TEST_CASE("session overhead occupies the charger, not just the ledger", "[runtime]") {
+    const Network network = singleStation(1);
+    StationRuntime withOverhead(network, 0.25);
+    StationRuntime without(network, 0.0);
+
+    const auto a = withOverhead.admit(0, 1, 0.0, 100.0);
+    const auto b = without.admit(0, 1, 0.0, 100.0);
+    CHECK_THAT(a.service(), WithinAbs(1.25, 1e-12));
+    CHECK_THAT(b.service(), WithinAbs(1.0, 1e-12));
+
+    // And it delays the next vehicle, which is what makes it a real cost.
+    const auto next = withOverhead.admit(0, 2, 0.0, 100.0);
+    CHECK_THAT(next.start, WithinAbs(1.25, 1e-12));
+}
+
 TEST_CASE("occupancy queries agree with the records they derive from", "[runtime]") {
     const Network network = singleStation(1);
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     runtime.admit(0, 1, 0.0, 100.0);  // charging over [0, 1)
     runtime.admit(0, 2, 0.0, 100.0);  // waiting over [0, 1), charging over [1, 2)
 
@@ -105,7 +120,7 @@ TEST_CASE("occupancy queries agree with the records they derive from", "[runtime
 
 TEST_CASE("utilisation stays within bounds and clips to the horizon", "[runtime]") {
     const Network network = singleStation(2);
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     runtime.admit(0, 1, 0.0, 100.0);  // one charger busy for 1h of a 2-charger station
 
     CHECK_THAT(runtime.utilisation(0, 2.0), WithinAbs(0.25, 1e-9));  // 1 of 4 charger-hours
@@ -117,7 +132,7 @@ TEST_CASE("utilisation stays within bounds and clips to the horizon", "[runtime]
 
 TEST_CASE("nodes without chargers are inert rather than dangerous", "[runtime]") {
     const Network network = testing::corridor();  // node 0 "Start" has no station
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.1);
     CHECK_THAT(runtime.expectedWait(0, 0.0), WithinAbs(0.0, 1e-12));
     CHECK_THAT(runtime.chargeTime(0, 50.0), WithinAbs(0.0, 1e-12));
     CHECK_THROWS_AS(runtime.admit(0, 1, 0.0, 10.0), std::runtime_error);
@@ -125,7 +140,7 @@ TEST_CASE("nodes without chargers are inert rather than dangerous", "[runtime]")
 
 TEST_CASE("reset returns the runtime to a clean slate", "[runtime]") {
     const Network network = singleStation(1);
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     runtime.admit(0, 1, 0.0, 100.0);
     REQUIRE(runtime.records(0).size() == 1);
     REQUIRE(runtime.lastFinish() > 0.0);
@@ -138,7 +153,7 @@ TEST_CASE("reset returns the runtime to a clean slate", "[runtime]") {
 
 TEST_CASE("allRecords is sorted and complete", "[runtime]") {
     const Network network = testing::corridor();
-    StationRuntime runtime(network);
+    StationRuntime runtime(network, 0.0);
     runtime.admit(2, 1, 3.0, 10.0);
     runtime.admit(1, 2, 1.0, 10.0);
     runtime.admit(1, 3, 2.0, 10.0);

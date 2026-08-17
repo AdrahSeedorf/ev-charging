@@ -5,7 +5,8 @@
 
 namespace evnet {
 
-StationRuntime::StationRuntime(const Network& network) : network_(&network) {
+StationRuntime::StationRuntime(const Network& network, Hours stopOverheadHours)
+    : network_(&network), stopOverhead_(stopOverheadHours) {
     chargerFreeAt_.resize(network.size());
     records_.resize(network.size());
     for (const auto& node : network.nodes()) {
@@ -26,7 +27,7 @@ Hours StationRuntime::expectedWait(NodeId node, Hours arrivalTime) const {
 Hours StationRuntime::chargeTime(NodeId node, Kwh energy) const {
     const Node& n = network_->node(node);
     if (!n.hasStation()) return 0.0;
-    return chargeDuration(energy, n.station->powerKw);
+    return stopOverhead_ + chargeDuration(energy, n.station->powerKw);
 }
 
 ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTime, Kwh energy) {
