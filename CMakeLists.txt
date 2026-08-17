@@ -28,6 +28,7 @@ add_library(evnet_core STATIC
         src/router.cpp
         src/simulation.cpp
         src/siting.cpp
+        src/station_runtime.cpp
         src/station_state.cpp)
 
 target_include_directories(evnet_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
