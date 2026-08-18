@@ -273,6 +273,35 @@ ranking is part artefact. It holds under both engines.
     --demands data/sydney-real/demands.csv --site-price 999   # every Δ must be 0.00
 ```
 
+### 8. On real data, the greedy planners strand vehicles the optimal planner rescues
+
+The shipped datasets never showed this, because on them every planner completes every
+trip and the argument is only about cost. Run the same five planners over the 227-station
+OpenStreetMap network:
+
+| planner | completed | stranded | mean $ | mean gen $ | stops |
+|---|---|---|---|---|---|
+| `farthest` | 400 | 0 | $12.36 | $25.71 | 0.60 |
+| `cheapest` | 391 | **9** | $12.18 | $29.14 | 2.48 |
+| `min-wait` | 400 | 0 | $14.15 | $29.68 | 0.84 |
+| `generalised` | 392 | **8** | $12.23 | $28.17 | 2.23 |
+| `optimal` | **400** | **0** | $12.70 | **$25.41** | 0.86 |
+
+`cheapest` and `generalised` are the two planners that optimise per-stop cost, and they
+are the two that lose vehicles. The failure is the thrashing pattern from Finding 4 taken
+to its conclusion: many tiny top-ups, each locally the cheapest available move, until the
+vehicle has spent its margin and no legal move remains. `optimal` finishes every trip
+*and* posts the lowest generalised cost, because it is solving the journey rather than
+the next hop.
+
+This is the clearest argument in the repo for the state-space planner, and it only shows
+up on a network dense and irregular enough to offer a bad greedy move at every node.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/sydney-real-map-dark.svg">
+  <img alt="227 OpenStreetMap charging stations across greater Sydney, coloured by peak charger load, with 11 candidate sites marked as hollow rings." src="docs/sydney-real-map-light.svg">
+</picture>
+
 ## Data quality: what the raw inputs got wrong
 
 The legacy Sydney distance matrix had two defects, both silent:
@@ -366,7 +395,12 @@ python3 tools/fetch_real_network.py \
 Real data is not clean data. Run `inspect` on whatever comes back — the geometric
 validator applies to fetched edges exactly as it does to the inherited ones.
 
-Three things the real Sydney extract needed that the shipped data never did:
+The resulting network is committed at `data/sydney-real` (227 real stations, 11
+candidate sites), so every figure below is reproducible without anyone hitting the
+Overpass API. `data/sydney-real/PROVENANCE.md` records the bounding box, the date, the
+exact command and each defect found.
+
+Four things the real Sydney extract needed that the shipped data never did:
 
 ```bash
 python3 tools/fetch_real_network.py --bbox -34.15 150.60 -33.55 151.35 \
@@ -382,6 +416,11 @@ python3 tools/fetch_real_network.py --bbox -34.15 150.60 -33.55 151.35 \
 - **Disconnected pockets.** Nearest-4 left 225 of 238 stations reachable. Rather than
   asking you to guess a larger `--neighbours` and densify the whole graph, the
   components are bridged with the minimum number of shortest crossings.
+- **A capacity that was really a power rating.** One node tagged `capacity=350` where
+  the median is 2 and its own power tag says 22 kW — 350 kW being a standard charger
+  rating. That one node held **37% of the network's entire charger capacity**, which
+  would have shaped every congestion and siting result without ever looking wrong. It
+  is reported and discarded rather than clamped, since clamping invents a number.
 - **No candidate sites at all.** A network built from where chargers already *are*
   contains no station-less nodes, and `site` ranks exactly those — so on real data the
   headline question had nothing to answer. Candidates are laid on an unbiased grid over
