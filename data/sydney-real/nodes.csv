@@ -13,7 +13,7 @@ id,name,has_station,price_per_kwh,chargers,power_kw,latitude,longitude,osm_id,op
 10,Station 11,1,0.55,1,22.0,-33.93064,151.24647,node/7401170459,,1
 11,Station 12,1,0.55,1,22.0,-33.89080,151.27627,node/7862093042,,1
 12,Station 13,1,0.55,1,22.0,-33.76937,150.73525,node/8148294052,,1
-13,Evie Networks,1,0.55,350,22.0,-33.76714,150.95482,node/8169947525,Evie Networks,1
+13,Evie Networks,1,0.55,4,22.0,-33.76714,150.95482,node/8169947525,Evie Networks,1
 14,Evie Networks #2,1,0.55,2,22.0,-33.82556,151.24143,node/8241597113,Evie Networks,1
 15,Chargefox #4,1,0.55,1,22.0,-33.90699,151.21301,node/8911115310,Chargefox,1
 16,Jolt,1,0.55,1,22.0,-33.67615,151.30311,node/9204398603,Jolt,1

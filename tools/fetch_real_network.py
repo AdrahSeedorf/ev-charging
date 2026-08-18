@@ -242,16 +242,44 @@ def parse_power_kw(tags: dict) -> float:
     return 22.0
 
 
-def parse_capacity(tags: dict) -> int:
-    """Number of vehicles that can charge at once."""
+# Above this, a "capacity" is not a bay count. The biggest charging sites anywhere run
+# to a few dozen stalls, and a three-digit capacity on a suburban OSM node is reliably
+# the POWER value entered in the wrong field -- the Sydney extract had one node claiming
+# 350 chargers at 22 kW, and 350 kW is a standard rating. Left in, that single node held
+# 37% of the network's entire capacity and would have dominated every congestion and
+# siting result computed from it.
+MAX_PLAUSIBLE_CHARGERS = 60
+
+#: Ratings common enough that seeing one in a capacity field is diagnostic, not coincidence.
+COMMON_POWER_RATINGS = {50, 60, 75, 100, 120, 150, 175, 250, 300, 350, 400}
+
+
+def parse_capacity(tags: dict, warn: list | None = None, label: str = "") -> int:
+    """Number of vehicles that can charge at once.
+
+    Implausible values are REPORTED and discarded rather than clamped. Clamping would
+    invent a number; discarding falls back to the same pessimistic default used when no
+    capacity is tagged at all, which is the honest position -- the tag told us nothing
+    usable, so we are back to not knowing.
+    """
     for key in ("capacity", "charging_station:capacity"):
         if key in tags:
             try:
                 value = int(float(str(tags[key]).split(";")[0].strip()))
-                if value > 0:
-                    return value
             except ValueError:
-                pass
+                continue
+            if value > MAX_PLAUSIBLE_CHARGERS:
+                if warn is not None:
+                    looks_like_power = value in COMMON_POWER_RATINGS
+                    warn.append(
+                        f"{label or 'a station'}: {key}={value} is implausible as a bay "
+                        f"count" + (f" ({value} is a standard charger power, so this "
+                                    f"looks like kW in the capacity field)"
+                                    if looks_like_power else "") +
+                        "; ignored, falling back to socket counts")
+                continue
+            if value > 0:
+                return value
     # Sum the per-socket counts if they are present.
     total = 0
     for key, raw in tags.items():
@@ -375,6 +403,7 @@ def merge_colocated(stations: list[dict], within_m: float) -> list[dict]:
 
 def extract_stations(payload: dict, max_stations: int, seed: int) -> list[dict]:
     stations = []
+    capacity_warnings: list[str] = []
     for element in payload.get("elements", []):
         centre = element.get("center") or element
         lat, lon = centre.get("lat"), centre.get("lon")
@@ -386,13 +415,19 @@ def extract_stations(payload: dict, max_stations: int, seed: int) -> list[dict]:
             "raw_name": station_name(tags, len(stations) + 1),
             "lat": float(lat),
             "lon": float(lon),
-            "chargers": parse_capacity(tags),
+            "chargers": parse_capacity(tags, capacity_warnings,
+                                       station_name(tags, len(stations) + 1)),
             "power_kw": parse_power_kw(tags),
             "operator": tags.get("operator", ""),
         })
 
     if not stations:
         raise SystemExit("error: Overpass returned no charging stations for that bounding box")
+
+    # Loud, not buried: a bad capacity distorts every congestion and siting result
+    # computed downstream, so it is worth interrupting the run's normal quiet output.
+    for warning in capacity_warnings:
+        print(f"  IMPLAUSIBLE CAPACITY -- {warning}")
 
     # Names repeat constantly in OSM ("Tesla Supercharger" many times over), and the
     # schema requires them unique, so disambiguate by suffix.

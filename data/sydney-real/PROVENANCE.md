@@ -24,7 +24,7 @@ Contrast with `data/sydney`, which is the legacy coursework matrix: 24 suburbs w
 
 ## What the raw data needed
 
-Real data is not clean data. Three things had to be handled, each reported by the
+Real data is not clean data. Four things had to be handled, each reported by the
 script as it runs.
 
 ### 11 co-located duplicates
@@ -49,6 +49,27 @@ Nearest-4 left the graph in more than one piece. Rather than asking you to guess
 larger `--neighbours` and densify the whole network to fix one corner of it, the
 components are joined by **2 bridging edges**, each the shortest available crossing.
 The result is 238/238 reachable.
+
+### One capacity that was really a power rating
+
+`node/8169947525` ("Evie Networks") tagged `capacity=350`. The median across this
+extract is **2** and the next-largest site has **14**, so 350 bays at one suburban node
+is not a plausible reading — and 350 kW is a standard charger rating, while the same
+node's own power tag says 22 kW. Someone put the kilowatts in the capacity field.
+
+Left in, that one node would have held **350 of the network's 952 chargers — 37% of
+total capacity at a single point.** Every congestion result and every siting
+recommendation drawn from this dataset would have been shaped by it, and nothing would
+have looked obviously wrong.
+
+The tag is reported loudly and then discarded, falling back to socket counts exactly as
+a station with no capacity tag does. Discarding rather than clamping is the point:
+clamping to 60 would invent a number, whereas falling back says only that the tag told
+us nothing usable. Corrected: **606 chargers, max 14, median 2.**
+
+There is no clean physical bound here of the sort great-circle distance gives for road
+lengths, so `MAX_PLAUSIBLE_CHARGERS` is a judgement (60) rather than a law. It sits well
+above the largest genuine charging site anywhere, so it only catches this failure mode.
 
 ### No candidate sites at all
 
