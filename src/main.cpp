@@ -186,6 +186,22 @@ NodeId resolveOrFail(const Network& network, const std::string& token, const cha
     return id;
 }
 
+/// Trim a name to fit a fixed-width table column.
+///
+/// std::setw pads but never truncates, so anything longer than the column silently
+/// shifted every column after it. The shipped datasets have short hand-written names and
+/// never hit it; real OSM data is full of "Tesla Destination Charger" and broke the
+/// header alignment on the very first inspect of a fetched network. The table has to
+/// cope with the data rather than the other way round.
+///
+/// Table rendering only -- CSV output must never be truncated, since it is read by the
+/// Python layer rather than by a person.
+std::string fit(std::string text, std::size_t width) {
+    if (width < 4) return text.substr(0, width);
+    if (text.size() >= width) text = text.substr(0, width - 4) + "...";
+    return text;
+}
+
 std::string money(Dollars value) {
     std::ostringstream out;
     out << "$" << std::fixed << std::setprecision(2) << value;
@@ -228,7 +244,7 @@ int cmdInspect(const Options& options) {
               << "degree\n";
     std::cout << std::string(68, '-') << "\n";
     for (const auto& node : network.nodes()) {
-        std::cout << std::left << std::setw(4) << node.id << std::setw(18) << node.name << std::setw(10)
+        std::cout << std::left << std::setw(4) << node.id << std::setw(18) << fit(node.name, 18) << std::setw(10)
                   << (node.hasStation() ? "yes" : "-");
         if (node.hasStation()) {
             std::ostringstream price;
@@ -344,7 +360,7 @@ void printSummaryRow(const Summary& summary) {
               << std::setw(12) << hoursText(summary.p95WaitHours) << std::setw(14)
               << money(summary.meanGeneralisedCost) << std::setw(8) << std::fixed
               << std::setprecision(2) << summary.meanStops << std::setw(9) << summary.peakQueue << "  "
-              << summary.peakStation << "\n";
+              << fit(summary.peakStation, 14) << "\n";
 }
 
 
@@ -371,7 +387,7 @@ void printTimedRow(const TimedSummary& s) {
               << std::setw(13) << money(s.meanGeneralisedCost) << std::setw(8) << std::fixed
               << std::setprecision(2) << s.meanStops << std::setw(11)
               << hoursText(s.meanElapsedHours) << std::setw(8) << s.peakWaiting << std::setw(8)
-              << util.str() << "  " << s.busiestStation << "\n";
+              << util.str() << "  " << fit(s.busiestStation, 14) << "\n";
 }
 
 void writeTimeSeries(const std::string& path,
@@ -460,7 +476,7 @@ int cmdSimulateEvents(const Options& options) {
         (void)when;
         std::ostringstream util;
         util << std::fixed << std::setprecision(0) << runtime.utilisation(id, horizon) * 100.0 << "%";
-        std::cout << std::left << std::setw(18) << network.node(id).name << std::right
+        std::cout << std::left << std::setw(18) << fit(network.node(id).name, 18) << std::right
                   << std::setw(10) << network.node(id).station->chargers << std::setw(10)
                   << records.size() << std::setw(11) << peak << std::setw(13)
                   << hoursText(records.empty() ? 0.0 : totalWait / static_cast<double>(records.size()))
@@ -570,7 +586,7 @@ int cmdSimulateStatic(const Options& options) {
     for (const NodeId id : network.stationNodes()) {
         const int queue = state.queueLength(id);
         if (queue == 0 && !options.verbose) continue;
-        std::cout << std::left << std::setw(18) << network.node(id).name << std::right << std::setw(10)
+        std::cout << std::left << std::setw(18) << fit(network.node(id).name, 18) << std::right << std::setw(10)
                   << network.node(id).station->chargers << std::setw(9) << queue << std::setw(14)
                   << hoursText(state.expectedWait(id)) << "\n";
     }
@@ -696,7 +712,7 @@ void printSiteTable(const std::vector<SiteScore>& scores, Dollars baseGeneralise
         } else {
             uptake << std::fixed << std::setprecision(0) << score.adoptionShare * 100.0 << "%";
         }
-        std::cout << std::left << std::setw(18) << score.name << std::right << std::setw(10)
+        std::cout << std::left << std::setw(18) << fit(score.name, 18) << std::right << std::setw(10)
                   << score.completed << std::setw(14) << money(score.meanGeneralisedCost)
                   << std::setw(12) << deltaText.str() << std::setw(12)
                   << hoursText(score.meanWaitHours) << std::setw(9) << score.peakQueue
