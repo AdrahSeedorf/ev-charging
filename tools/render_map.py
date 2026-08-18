@@ -147,14 +147,51 @@ def project(nodes: list[dict]):
 LEGEND_LEFT = WIDTH - PAD_RIGHT + 12
 
 
-def place_labels(nodes: list[dict]) -> None:
+# How many names a reader can actually scan on one map. Past this, labelling stops
+# being information and starts being texture.
+LABEL_BUDGET = 30
+
+
+def choose_labelled(nodes: list[dict]) -> set:
+    """Which nodes get a name drawn beside them.
+
+    Labelling every node is right for 24 places and badly wrong for 238. The first real
+    OSM render put all 227 station names on the plot and the metro core came out as a
+    solid block of overlapping text -- strictly less readable than no labels at all,
+    because it also obscured the dots underneath.
+
+    Above the budget, labels go to the nodes carrying the most information: every
+    candidate site, since those are the answer to the question `evnet site` asks, and
+    then the largest stations by charger count. Everything else keeps its dot, its size
+    and its colour, and gives up only its name -- which the interactive HTML still shows
+    on hover, and the table underneath still lists in full.
+    """
+    if len(nodes) <= LABEL_BUDGET:
+        return {node["id"] for node in nodes}
+
+    keep = {node["id"] for node in nodes if not node["has_station"]}
+    stations = sorted((n for n in nodes if n["has_station"]),
+                      key=lambda n: (-n["chargers"], n["name"]))
+    for node in stations:
+        if len(keep) >= LABEL_BUDGET:
+            break
+        keep.add(node["id"])
+    return keep
+
+
+def place_labels(nodes: list[dict]) -> int:
     """Greedy label placement: try each offset in turn, take the first that neither
     collides with an already-placed label nor escapes the plot area.
 
     Crude, but it beats overlapping text -- and the plot-area clamp matters: without
     it the easternmost place (Manly, in the Sydney set) put its label straight through
     the legend.
+
+    Returns the number of names not drawn, so the caller can say so rather than let the
+    map imply it has shown everything.
     """
+    labelled = choose_labelled(nodes)
+    dropped = len(nodes) - len(labelled)
     placed: list[tuple[float, float, float, float]] = []
     offsets = [(11, 4, "start"), (-11, 4, "end"), (0, -12, "middle"), (0, 17, "middle"),
                (11, -8, "start"), (-11, -8, "end"), (11, 15, "start"), (-11, 15, "end")]
@@ -169,6 +206,9 @@ def place_labels(nodes: list[dict]) -> None:
 
     # Stations first: they carry the data, so they get the better positions.
     for node in sorted(nodes, key=lambda n: (not n["has_station"], n["name"])):
+        if node["id"] not in labelled:
+            node["label"] = None
+            continue
         width = 7.0 * len(node["name"])
         for dx, dy, anchor in offsets:
             x = node["x"] + dx
@@ -180,10 +220,17 @@ def place_labels(nodes: list[dict]) -> None:
                 placed.append(box)
                 break
         else:
-            # Nothing fit. Fall back to the side with more room, and accept overlap
-            # rather than dropping the name.
+            # Nothing fit. On a sparse map, overlapping one name beats losing it. On a
+            # crowded one that reasoning is what produced the block of mush, so once the
+            # budget is doing any work at all, an unplaceable label is dropped instead.
+            if dropped:
+                node["label"] = None
+                dropped += 1
+                continue
             anchor = "end" if node["x"] > WIDTH / 2 else "start"
             node["label"] = (node["x"] + (-11 if anchor == "end" else 11), node["y"] + 4, anchor)
+
+    return dropped
 
 
 # --------------------------------------------------------------------------
@@ -236,7 +283,8 @@ def draw(nodes, edges, theme_name: str, util: dict, site: str | None,
           f'x2="{q["x"]:.1f}" y2="{q["y"]:.1f}"/>')
     a("</g>")
 
-    # Places.
+    # Places. Labels are buffered and drawn afterwards; see the note below.
+    labels: list[str] = []
     for node in nodes:
         r = radius(node["chargers"]) if node["has_station"] else 5.0
         stats = util.get(node["name"])
@@ -283,16 +331,34 @@ def draw(nodes, edges, theme_name: str, util: dict, site: str | None,
             a(f'<circle cx="{node["x"]:.1f}" cy="{node["y"]:.1f}" r="{r + 5:.1f}" '
               f'fill="none" stroke="{t["site"]}" stroke-width="2.5"/>')
 
-        lx, ly, anchor = node["label"]
+        a("</g>")
+
+        # An unlabelled node keeps its dot, size and colour; only the name is withheld,
+        # and the hover tooltip above still carries it. The recommended site is the one
+        # exception -- it is the answer, so it is named even if the budget skipped it.
+        placement = node["label"]
+        if placement is None and is_site:
+            placement = (node["x"] + 11, node["y"] + 4, "start")
+        if placement is None:
+            continue
+
+        # Held back rather than drawn here. Emitting each label beside its own circle
+        # let every LATER circle paint over it, so in the dense metro core the names
+        # were half-buried under the dots of their neighbours. Text goes on top of the
+        # whole scatter, in one pass, after every circle is down.
+        lx, ly, anchor = placement
         weight = "600" if node["has_station"] else "400"
         colour = t["ink"] if node["has_station"] else t["ink_muted"]
-        a(f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}" fill="{colour}" '
-          f'font-size="11" font-weight="{weight}">{esc(name)}</text>')
+        labels.append(f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}" '
+                      f'fill="{colour}" font-size="11" font-weight="{weight}">'
+                      f'{esc(name)}</text>')
         if is_site:
-            a(f'<text x="{lx:.1f}" y="{ly + 12:.1f}" text-anchor="{anchor}" '
-              f'fill="{t["site"]}" font-size="10" font-weight="600">'
-              f'&#9679; recommended site</text>')
-        a("</g>")
+            labels.append(f'<text x="{lx:.1f}" y="{ly + 12:.1f}" text-anchor="{anchor}" '
+                          f'fill="{t["site"]}" font-size="10" font-weight="600">'
+                          f'&#9679; recommended site</text>')
+
+    for label in labels:
+        a(label)
 
     # Legend. Present whenever more than one thing is encoded, which is always here.
     lx = WIDTH - PAD_RIGHT + 24
@@ -457,14 +523,17 @@ def main() -> int:
 
     nodes, edges = load_network(args.network)
     project(nodes)
-    place_labels(nodes)
+    unlabelled = place_labels(nodes)
     util = load_utilisation(args.load) if args.load else {}
 
     stations = sum(1 for n in nodes if n["has_station"])
     name = args.name or args.network.name
     title = args.title or f"{name.title()} charging network"
+    # Say what was left out. A map that quietly drops 200 names reads as though it has
+    # shown everything, which is the more misleading of the two failure modes.
     subtitle = args.subtitle or (
         f"{len(nodes)} places, {stations} with charging stations, {len(edges)} road links."
+        + (f" {unlabelled} smaller stations unlabelled; hover for names." if unlabelled else "")
         + ("" if util else " No load data: run with --load to colour by utilisation."))
 
     args.out.mkdir(parents=True, exist_ok=True)
