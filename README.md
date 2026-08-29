@@ -84,6 +84,7 @@ other — because the comparison is the deliverable.
 evnet inspect  --network data/sydney                                  # summarise + validate
 evnet route    --network data/hume --from Sydney --to Melbourne \
                --battery 67 --soc 56 --planner optimal                # one vehicle's plan
+               # all five planners work here; add --engine static for stage 1's model
 evnet compare  --network data/hume --demands data/hume/demands.csv    # all planners, tabulated
 evnet compare  --network data/hume --demands data/hume/demands.csv \
                --engine static                                        # stage 1's timeless model

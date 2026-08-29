@@ -268,7 +268,79 @@ int cmdInspect(const Options& options) {
     return 0;
 }
 
-int cmdRoute(const Options& options) {
+
+/// One vehicle, on the clock, with any of the five planners.
+///
+/// `route` was the last command still bound to the stage-1 policies, so
+/// `--planner optimal` -- the planner this project exists to demonstrate -- was
+/// rejected here while working everywhere else. The README's own example did not
+/// run. It now dispatches on --engine like simulate, compare and site.
+int cmdRouteEvents(const Options& options) {
+    const Network network = loadNetwork(options);
+    const Router router(network);
+    const NodeId from = resolveOrFail(network, options.from, "from");
+    const NodeId to = resolveOrFail(network, options.to, "to");
+
+    const Km distance = router.distance(from, to);
+    if (distance == Router::kUnreachable) {
+        std::cout << network.node(from).name << " -> " << network.node(to).name << ": unreachable\n";
+        return 1;
+    }
+
+    std::cout << network.node(from).name << " -> " << network.node(to).name << "\n"
+              << "  shortest distance " << std::fixed << std::setprecision(1) << distance
+              << " km\n  route  ";
+    const auto path = router.path(from, to);
+    for (std::size_t i = 0; i < path.size(); ++i) {
+        std::cout << network.node(path[i]).name;
+        if (i + 1 < path.size()) std::cout << " -> ";
+    }
+    std::cout << "\n\n";
+
+    Demand demand;
+    demand.id = 1;
+    demand.origin = from;
+    demand.destination = to;
+    demand.batteryKwh = options.battery;
+    demand.socKwh = options.soc >= 0.0 ? options.soc : options.battery * 0.2;
+    if (demand.socKwh > demand.batteryKwh) fail("--soc cannot exceed --battery");
+
+    const SimulatorConfig config = makeSimulatorConfig(options);
+    const auto planner = makePlanner(options.policy, network, router,
+                                     config.valueOfTimePerHour, config.feasibility());
+    const Simulator simulator(network, router, config);
+    StationRuntime runtime(network);
+    const auto trips = simulator.run({demand}, *planner, runtime);
+    const TimedTrip& trip = trips.front();
+
+    std::cout << "Charging plan (planner: " << planner->name() << ", battery "
+              << std::setprecision(0) << demand.batteryKwh << " kWh, starting charge "
+              << demand.socKwh << " kWh -> range " << std::setprecision(0) << demand.rangeKm()
+              << " km)\n";
+    if (!trip.completed) {
+        std::cout << "  INCOMPLETE: " << trip.failure << "\n";
+        return 1;
+    }
+    if (trip.stops.empty()) {
+        std::cout << "  no charging needed\n";
+    } else {
+        for (std::size_t i = 0; i < trip.stops.size(); ++i) {
+            const auto& stop = trip.stops[i];
+            std::cout << "  " << (i + 1) << ". " << network.node(stop.node).name << " -- take "
+                      << std::fixed << std::setprecision(1) << stop.energyKwh << " kWh for "
+                      << money(stop.energyCost) << ", wait " << hoursText(stop.waitHours)
+                      << ", charge " << hoursText(stop.chargeHours) << "\n";
+        }
+    }
+    std::cout << "  distance " << std::setprecision(1) << trip.distanceKm << " km"
+              << "  travel " << money(trip.travelCost) << "  energy " << money(trip.energyCost)
+              << "  driving " << hoursText(trip.drivingHours) << "\n"
+              << "  generalised cost " << money(trip.generalisedCost(options.valueOfTime))
+              << " (time valued at " << money(options.valueOfTime) << "/h)\n";
+    return 0;
+}
+
+int cmdRouteStatic(const Options& options) {
     const Network network = loadNetwork(options);
     const Router router(network);
     const NodeId from = resolveOrFail(network, options.from, "from");
@@ -759,7 +831,11 @@ int main(int argc, char** argv) {
     const Options options = parse(argc, argv);
     try {
         if (options.command == "inspect") return cmdInspect(options);
-        if (options.command == "route") return cmdRoute(options);
+        if (options.command == "route") {
+            if (options.engine == "events") return cmdRouteEvents(options);
+            if (options.engine == "static") return cmdRouteStatic(options);
+            fail("unknown engine '" + options.engine + "' (expected events or static)");
+        }
         if (options.command == "simulate") {
             if (options.engine == "events") return cmdSimulateEvents(options);
             if (options.engine == "static") return cmdSimulateStatic(options);
