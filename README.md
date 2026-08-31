@@ -168,12 +168,12 @@ and worst planner:
 
 | fleet | spread in generalised cost | spread in mean wait | worst planner's utilisation |
 |---|---|---|---|
-| 200 | $19.56 | 1.06h | 53% |
-| 400 | $70.44 | 3.57h | 71% |
+| 200 | $19.56 | 1.06h | 52% |
+| 400 | $70.44 | 3.58h | 72% |
 | 800 | $180.86 | 9.06h | 87% |
 | 1,600 | $393.61 | 19.69h | 93% |
 | 3,200 | $841.13 | 42.12h | 98% |
-| 6,400 | **$1,668.54** | **83.46h** | 99% |
+| 6,400 | **$1,668.53** | **83.46h** | 99% |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/saturation-dark.svg">
@@ -189,16 +189,23 @@ corridor as inherited was nowhere near that regime.
 ### 3. Lookahead helps when the network is calm and hurts when it is busy
 
 The `optimal` planner solves for least generalised cost over the whole remaining
-journey, and uncongested it wins: $316.26 against the best greedy $317.75, reaching
-its destination in **1.28 stops where `cheapest` takes 3.63**.
+journey. On the shipped fleet it comes first — $316.26 against the best greedy
+$317.75 — but that margin is $1.49, which Finding 2 says to read as a tie. Its
+unambiguous win there is on stops: **1.28 where `cheapest` takes 3.63**.
 
-Under load it loses:
+Under load it loses, and not narrowly:
 
 | fleet | `optimal` mean wait | `min-wait` mean wait | `optimal` gen $ | `min-wait` gen $ |
 |---|---|---|---|---|
-| 200 | 0.02h | 0.00h | **316** | 318 |
-| 1,600 | 6.81h | 4.54h | 461 | **407** |
-| 6,400 | 40.62h | 31.81h | 1,135 | **952** |
+| 199 (shipped demands) | 0.02h | 0.00h | **$316.26** | $317.75 |
+| 200 (resampled) | 0.10h | 0.00h | $318.52 | **$318.02** |
+| 1,600 | 6.20h | 4.54h | $447.44 | **$406.93** |
+| 6,400 | 38.05h | 31.81h | $1,083.84 | **$952.35** |
+
+The first two rows are the same fleet size drawn two ways — the shipped demand file
+and one the sweep resampled — and they disagree about the winner by under a dollar in
+either direction. That is the honest reading of "optimal wins when calm": at that size
+nothing wins. By 6,400 the gap is $131 and the sign never flips again.
 
 The cause is the documented limit on `OptimalPlanner`: it treats each station's wait
 as fixed for the duration of its plan. When congestion is building, that forecast is
