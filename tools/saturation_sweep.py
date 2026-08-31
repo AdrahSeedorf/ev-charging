@@ -26,7 +26,32 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-EVNET = ROOT / "build" / "evnet"
+
+
+def find_evnet() -> Path:
+    """Locate the built binary wherever CMake put it.
+
+    This used to be hard-coded to build/evnet, which is not where any of the
+    project's own presets write it -- the debug preset builds to build/debug/evnet,
+    so the command the README gives for this script failed on a correctly built
+    tree. Searching the usual places costs nothing and removes a class of "works on
+    my machine".
+    """
+    candidates = [
+        ROOT / "build" / "debug" / "evnet",
+        ROOT / "build" / "release" / "evnet",
+        ROOT / "build" / "evnet",
+    ]
+    for path in candidates:
+        if path.is_file():
+            return path
+    tried = "\n  ".join(str(c) for c in candidates)
+    raise SystemExit("error: could not find the evnet binary. Looked in:\n  " + tried
+                     + "\n\nBuild it first, for example:\n"
+                       "  cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug && "
+                       "cmake --build build/debug -j4")
+
+
 BASE_DEMANDS = ROOT / "data" / "hume" / "demands.csv"
 NETWORK = ROOT / "data" / "hume"
 
@@ -60,9 +85,9 @@ def scaled_fleet(base: list[dict], size: int, rng: random.Random) -> list[dict]:
     return out
 
 
-def run_compare(demands_path: Path) -> list[dict]:
+def run_compare(evnet: Path, demands_path: Path) -> list[dict]:
     result = subprocess.run(
-        [str(EVNET), "compare", "--network", str(NETWORK), "--demands", str(demands_path),
+        [str(evnet), "compare", "--network", str(NETWORK), "--demands", str(demands_path),
          "--engine", "events", "--format", "csv"],
         capture_output=True, text=True, check=True,
     )
@@ -74,9 +99,7 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=None, help="write full results here")
     args = parser.parse_args()
 
-    if not EVNET.exists():
-        print(f"error: {EVNET} not found -- build the project first", file=sys.stderr)
-        return 1
+    evnet = find_evnet()
 
     base = read_base()
     rng = random.Random(SEED)
@@ -94,7 +117,7 @@ def main() -> int:
                 writer = csv.DictWriter(fh, fieldnames=list(fleet[0].keys()))
                 writer.writeheader()
                 writer.writerows(fleet)
-            summaries = run_compare(path)
+            summaries = run_compare(evnet, path)
 
         for summary in summaries:
             summary["fleet"] = size
