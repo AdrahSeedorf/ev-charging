@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 530" width="860" height="530" role="img" aria-label="How a journey is decided. Everything above the seam is about agents competing for capacity at nodes. Only the bottom band knows what a car is." font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, sans-serif">
+<rect x="0.0" y="0.0" width="860.0" height="530.0" fill="#1a1a19" rx="0"/>
+<text x="28.0" y="38.0" font-size="17" fill="#ffffff" text-anchor="start" font-weight="700" opacity="1.0">How a journey is decided</text>
+<text x="28.0" y="60.0" font-size="12.5" fill="#c3c2b7" text-anchor="start" font-weight="400" opacity="1.0">Everything above the seam is about agents competing for capacity at nodes. Only the bottom band knows what a car is.</text>
+<rect x="28.0" y="92.0" width="150.0" height="56.0" fill="#0d0d0d" rx="6"/>
+<rect x="28" y="92" width="150" height="56" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="103.0" y="114.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">Network</text>
+<text x="103.0" y="132.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">nodes, edges</text>
+<line x1="178.0" y1="120.0" x2="220.0" y2="120.0" stroke="#383835" stroke-width="1.5" stroke-linecap="butt"/>
+<polygon points="220,120 214,115 214,125" fill="#383835"/>
+<rect x="220.0" y="92.0" width="150.0" height="56.0" fill="#0d0d0d" rx="6"/>
+<rect x="220" y="92" width="150" height="56" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="295.0" y="114.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">Router</text>
+<text x="295.0" y="132.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">Dijkstra, cached</text>
+<line x1="370.0" y1="120.0" x2="412.0" y2="120.0" stroke="#383835" stroke-width="1.5" stroke-linecap="butt"/>
+<polygon points="412,120 406,115 406,125" fill="#383835"/>
+<rect x="412.0" y="92.0" width="170.0" height="56.0" fill="#0d0d0d" rx="6"/>
+<rect x="412" y="92" width="170" height="56" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="497.0" y="114.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">Candidates</text>
+<text x="497.0" y="132.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">one feasibility rule</text>
+<text x="28.0" y="206.0" font-size="11" fill="#898781" text-anchor="start" font-weight="600" opacity="1.0">PLANNERS — what to do next</text>
+<rect x="28.0" y="216.0" width="250.0" height="52.0" fill="#0d0d0d" rx="6"/>
+<rect x="28" y="216" width="250" height="52" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="153.0" y="238.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">Greedy × 4</text>
+<text x="153.0" y="256.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">score only the next stop</text>
+<rect x="300.0" y="216.0" width="282.0" height="52.0" fill="#0d0d0d" rx="6"/>
+<rect x="300" y="216" width="282" height="52" rx="6" fill="none" stroke="#3987e5" stroke-width="1.5"/>
+<text x="441.0" y="238.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">Optimal</text>
+<text x="441.0" y="256.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">Dijkstra over (node, charge)</text>
+<text x="28.0" y="314.0" font-size="11" fill="#898781" text-anchor="start" font-weight="600" opacity="1.0">ENGINES — what congestion means</text>
+<rect x="28.0" y="324.0" width="250.0" height="52.0" fill="#0d0d0d" rx="6"/>
+<rect x="28" y="324" width="250" height="52" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="153.0" y="346.0" font-size="12.5" fill="#c3c2b7" text-anchor="middle" font-weight="600" opacity="1.0">Static tally</text>
+<text x="153.0" y="364.0" font-size="11" fill="#c3c2b7" text-anchor="middle" font-weight="400" opacity="0.85">timeless; kept for comparison</text>
+<rect x="300.0" y="324.0" width="282.0" height="52.0" fill="#0d0d0d" rx="6"/>
+<rect x="300" y="324" width="282" height="52" rx="6" fill="none" stroke="#3987e5" stroke-width="1.5"/>
+<text x="441.0" y="346.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">Event-driven clock</text>
+<text x="441.0" y="364.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">waits are measured, not guessed</text>
+<line x1="28.0" y1="418.0" x2="832.0" y2="418.0" stroke="#d95926" stroke-width="2" stroke-linecap="butt" stroke-dasharray="6 5"/>
+<text x="832.0" y="408.0" font-size="11.5" fill="#d95926" text-anchor="end" font-weight="600" opacity="1.0">the domain seam</text>
+<rect x="28.0" y="436.0" width="554.0" height="52.0" fill="#0d0d0d" rx="6"/>
+<rect x="28" y="436" width="554" height="52" rx="6" fill="none" stroke="#d95926" stroke-width="1.5"/>
+<text x="305.0" y="458.0" font-size="12.5" fill="#c3c2b7" text-anchor="middle" font-weight="600" opacity="1.0">EV specifics</text>
+<text x="305.0" y="476.0" font-size="11" fill="#c3c2b7" text-anchor="middle" font-weight="400" opacity="0.85">kWh ↔ km, charge curves, prices — the only layer that knows about cars</text>
+<rect x="612.0" y="92.0" width="220.0" height="56.0" fill="#0d0d0d" rx="6"/>
+<rect x="612" y="92" width="220" height="56" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="722.0" y="114.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">route</text>
+<text x="722.0" y="132.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">one vehicle's plan</text>
+<rect x="612.0" y="216.0" width="220.0" height="52.0" fill="#0d0d0d" rx="6"/>
+<rect x="612" y="216" width="220" height="52" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="722.0" y="238.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">compare</text>
+<text x="722.0" y="256.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">every planner, tabulated</text>
+<rect x="612.0" y="324.0" width="220.0" height="52.0" fill="#0d0d0d" rx="6"/>
+<rect x="612" y="324" width="220" height="52" rx="6" fill="none" stroke="#383835" stroke-width="1.5"/>
+<text x="722.0" y="346.0" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="600" opacity="1.0">site</text>
+<text x="722.0" y="364.0" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="400" opacity="0.85">where to build next</text>
+<text x="722.0" y="74.0" font-size="11" fill="#898781" text-anchor="middle" font-weight="600" opacity="1.0">COMMANDS</text>
+<text x="28.0" y="514.0" font-size="11" fill="#898781" text-anchor="start" font-weight="400" opacity="1.0">Swap the bottom band and the engine above it is unchanged.</text>
+</svg>

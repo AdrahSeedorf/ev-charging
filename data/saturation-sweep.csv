@@ -1,0 +1,33 @@
+# Output of tools/saturation_sweep.py on data/hume, seed 20260817.
+# Committed so the charts are reproducible without a ten-minute rerun.
+fleet,planner,stranded,mean_wait_h,p95_wait_h,peak_utilisation,mean_generalised
+200,farthest,0,1.06,4.13,52,337.58
+200,cheapest,0,0.05,0.30,21,321.09
+200,min-wait,0,0.00,0.00,19,318.02
+200,generalised,0,0.05,0.30,21,321.09
+200,optimal,0,0.10,0.66,33,318.52
+400,farthest,0,3.60,16.12,72,388.43
+400,cheapest,0,0.30,1.51,41,326.18
+400,min-wait,0,0.02,0.11,34,317.99
+400,generalised,0,0.30,1.51,41,326.18
+400,optimal,0,0.63,2.96,56,329.44
+800,farthest,0,9.68,43.44,87,509.76
+800,cheapest,0,2.55,9.13,62,370.82
+800,min-wait,0,0.62,3.30,49,328.90
+800,generalised,0,2.08,7.89,56,361.16
+800,optimal,0,2.08,7.32,61,359.19
+1600,farthest,0,24.23,101.68,93,800.54
+1600,cheapest,0,8.03,26.97,78,480.33
+1600,min-wait,0,4.54,14.57,71,406.93
+1600,generalised,0,4.58,13.75,68,409.77
+1600,optimal,0,6.20,18.54,75,447.44
+3200,farthest,0,54.78,218.80,98,1411.84
+3200,cheapest,0,21.63,67.54,88,752.52
+3200,min-wait,0,13.12,36.91,83,578.99
+3200,generalised,0,12.66,34.57,81,570.71
+3200,optimal,0,16.70,51.89,88,662.08
+6400,farthest,0,115.25,452.27,99,2620.88
+6400,cheapest,0,48.85,148.63,94,1296.54
+6400,min-wait,0,31.81,85.15,93,952.35
+6400,generalised,0,31.79,81.05,90,952.39
+6400,optimal,0,38.05,113.26,93,1083.84
