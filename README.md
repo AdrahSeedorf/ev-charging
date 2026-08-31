@@ -80,6 +80,15 @@ other — because the comparison is the deliverable.
 
 ## What it does
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg">
+  <img alt="A layered diagram: Network, Router and Candidates feed five planners, which feed two congestion engines, all sitting above a seam. Below the seam is a single EV-specific layer holding kWh-to-km conversion, charge curves and prices. The three commands route, compare and site sit at the bottom." src="docs/architecture-light.svg">
+</picture>
+
+Everything above the seam is about agents competing for capacity at nodes. Only the
+bottom band knows what a car is — which is the whole of the claim in
+[Beyond EVs](#beyond-evs), drawn.
+
 ```bash
 evnet inspect  --network data/sydney                                  # summarise + validate
 evnet route    --network data/hume --from Sydney --to Melbourne \
@@ -130,11 +139,27 @@ the identical fleet through the event-driven clock, where chargers free up:
 
 Reproduce with `--engine static` versus `--engine events`.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/wait-error-dark.svg">
+  <img alt="A dumbbell chart on a log scale. For each of four planners, the measured wait sits far to the left of the wait the static model claimed. The gaps run from 6 times too high for farthest to 1,476 times too high for min-wait." src="docs/wait-error-light.svg">
+</picture>
+
+The log scale is not a stylistic choice — on a linear axis three of the four measured
+values are indistinguishable from zero, which is itself the finding.
+
 The uncomfortable corollary: **at its inherited fleet size the Hume corridor is
 barely congested at all.** 199 vehicles over a 16-hour day against 48 chargers is
 roughly 20-30% utilisation. So the legacy corridor project's central claim -- that
 queue balancing matters -- was substantially an artefact of a queue that never
 emptied. Its algorithm was reasonable; its evidence was not.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/load-over-day-dark.svg">
+  <img alt="Chargers in use across a simulated 28-hour day against the corridor's 48-charger capacity. Occupancy peaks at 18 and the queue never exceeds 2 vehicles, leaving 62 percent of the corridor idle even at its busiest moment." src="docs/load-over-day-light.svg">
+</picture>
+
+Drawn against capacity rather than auto-scaled, because the empty space above the
+curve *is* the argument.
 
 ### 2. Policy choice is worth almost nothing until the network saturates
 
@@ -149,6 +174,11 @@ and worst planner:
 | 1,600 | $393.61 | 19.69h | 93% |
 | 3,200 | $841.13 | 42.12h | 98% |
 | 6,400 | **$1,668.54** | **83.46h** | 99% |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/saturation-dark.svg">
+  <img alt="Mean generalised cost per trip for all five planners as the fleet grows from 200 to 6,400 vehicles. The five lines are indistinguishable at 200 vehicles, a spread of $20, and fan apart to a spread of $1,669 at 6,400, with farthest rising fastest." src="docs/saturation-light.svg">
+</picture>
 
 Below saturation every strategy is within cents and the sophistication is wasted.
 Above it the naive `farthest` baseline collapses first -- 115h mean wait at 6,400
@@ -263,6 +293,18 @@ The consequence is a different answer, not just different numbers next to the sa
 
 The static engine nominates 0-2 because it is relieving a queue that does not exist.
 Both engines remain selectable, and `site` now names the engine in its heading.
+
+The disagreement is wider still on the real network. Ranking all eleven OpenStreetMap
+candidate sites under each engine:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/siting-disagreement-dark.svg">
+  <img alt="A slope chart ranking eleven candidate sites under each engine. Lines cross heavily: the site the event-driven engine ranks first, Site 4-4, is only seventh under the static tally, and the static tally's own first choice, Site 2-1, drops to second." src="docs/siting-disagreement-light.svg">
+</picture>
+
+Only three of eleven sites hold their rank. A government acting on the static model
+would build at Site 2-1; on the clock, the site worth building is one the static model
+ranks seventh.
 
 A useful sanity check on any siting result, and one this repo asserts as a test: price
 the hypothetical station beyond use and every candidate must score *exactly* the
@@ -449,6 +491,23 @@ hover detail and a table view carrying the same figures. Station load gets a
 sequential single-hue ramp because it is a magnitude; station-versus-waypoint is
 encoded by shape rather than a second hue, so colour does exactly one job. Both ramps
 were checked with a palette validator rather than by eye.
+
+### Charts
+
+```bash
+python3 tools/render_charts.py --out docs
+```
+
+Regenerates the five figures above. Four of them run the engine to get their numbers;
+only the saturation chart reads a cached `data/saturation-sweep.csv`, because the sweep
+it comes from takes ten minutes. Every figure carries the command that produced it in
+its footer, so nothing in this README is a number without a way to reproduce it.
+
+The same discipline as the maps applies: form chosen for the data's job before any
+colour was picked, every palette put through the validator, and each chart rendered and
+looked at — which is how four label collisions that no validator can see were caught.
+Three light-mode series fall below 3:1 contrast against the surface, so every series is
+directly labelled rather than relying on the legend.
 
 ### Developing in VS Code
 
