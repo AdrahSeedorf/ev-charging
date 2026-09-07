@@ -595,11 +595,11 @@ translation unit.
 
 Stage 1 models congestion statically: arrivals accumulate at a station and never
 depart, so **wait figures are a comparable congestion index, not predicted
-hours** — which is why a p95 of 53h appears above. This faithfully reproduces the
-corridor project's semantics, which is what makes the policy comparison against
-it meaningful, but it is the first thing stage 2 replaces, with a discrete-event
-clock where vehicles occupy a charger for a duration and then release it.
-
+hours** — which is why Finding 1 shows `cheapest` claiming a p95 of 59.35h where
+the clock measures 0.12h. This faithfully reproduces the corridor project's
+semantics, which is what makes the policy comparison against it meaningful, but
+it is the first thing stage 2 replaces, with a discrete-event clock where
+vehicles occupy a charger for a duration and then release it.
 ## Roadmap
 
 - [x] **Stage 1 — merge.** One graph model, one demand type, one objective, four
