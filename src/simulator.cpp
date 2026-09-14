@@ -49,7 +49,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
         const Demand& demand = demands[i];
         Runner& runner = runners[i];
         runner.at = demand.origin;
-        runner.soc = demand.socKwh;
+        runner.soc = demand.level;
         runner.trip.demandId = demand.id;
         runner.trip.releaseTime = demand.releaseHour;
         runner.trip.finishTime = demand.releaseHour;
@@ -77,26 +77,26 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
             continue;
         }
 
-        VehicleState vehicle;
+        AgentState vehicle;
         vehicle.id = demand.id;
         vehicle.at = runner.at;
         vehicle.destination = demand.destination;
-        vehicle.socKwh = runner.soc;
-        vehicle.batteryKwh = demand.batteryKwh;
-        vehicle.efficiency = demand.efficiency;
+        vehicle.level = runner.soc;
+        vehicle.capacity = demand.capacity;
+        vehicle.consumption = demand.consumption;
         vehicle.now = event.time;
 
         // A top-up mission is a single round trip with one decision, so it is
         // resolved in one step rather than driven through the arrival loop.
         if (demand.isTopUp()) {
             const auto candidates = buildTopUpCandidates(*network_, *router_, runtime, vehicle,
-                                                         demand.requiredKwh, feasibility);
+                                                         demand.requiredAmount, feasibility);
             const Candidate* chosen =
                 candidates.empty() ? nullptr : planner.scoringPolicy().choose(candidates);
             if (chosen == nullptr) {
                 runner.done = true;
                 runner.trip.failure = "no reachable charging station can serve a " +
-                                      std::to_string(static_cast<int>(demand.requiredKwh)) +
+                                      std::to_string(static_cast<int>(demand.requiredAmount)) +
                                       " kWh top-up from " + network_->node(runner.at).name;
                 continue;
             }
@@ -125,7 +125,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
             case Action::Kind::DriveToDestination: {
                 const Km leg = router_->distance(runner.at, demand.destination);
                 const Hours travel = drivingTime(leg, config_.speedKmh);
-                runner.soc -= energyForDistance(leg, demand.efficiency);
+                runner.soc -= energyForDistance(leg, demand.consumption);
                 runner.trip.distanceKm += leg;
                 runner.trip.drivingHours += travel;
                 runner.trip.travelCost = runner.trip.distanceKm * config_.travelCostPerKm;
@@ -143,7 +143,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                     break;
                 }
                 const Hours travel = drivingTime(leg, config_.speedKmh);
-                runner.soc -= energyForDistance(leg, demand.efficiency);
+                runner.soc -= energyForDistance(leg, demand.consumption);
                 runner.trip.distanceKm += leg;
                 runner.trip.drivingHours += travel;
                 runner.at = action.target;
@@ -162,7 +162,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                 const ServiceRecord record =
                     runtime.admit(runner.at, demand.id, event.time, action.energyKwh);
 
-                runner.soc = std::min(demand.batteryKwh, runner.soc + action.energyKwh);
+                runner.soc = std::min(demand.capacity, runner.soc + action.energyKwh);
                 const Dollars cost = action.energyKwh * node.station->pricePerUnit;
                 runner.trip.stops.push_back(Stop{runner.at, action.energyKwh, cost, record.wait(),
                                                  record.service()});

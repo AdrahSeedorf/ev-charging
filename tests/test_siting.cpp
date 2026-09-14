@@ -32,9 +32,9 @@ Demand gapJourney() {
     demand.id = 1;
     demand.origin = 0;
     demand.destination = 4;
-    demand.batteryKwh = 30.0;  // 166 km full range, so 200 km hops are impossible
-    demand.socKwh = 20.0;
-    demand.efficiency = 18.0;
+    demand.capacity = 30.0;  // 166 km full range, so 200 km hops are impossible
+    demand.level = 20.0;
+    demand.consumption = 18.0;
     return demand;
 }
 
@@ -158,8 +158,8 @@ TEST_CASE("a station no vehicle uses changes nothing at all", "[siting]") {
     for (int i = 0; i < 6; ++i) {
         Demand demand = gapJourney();
         demand.id = i;
-        demand.batteryKwh = 60.0;  // ample, so the gap is not what decides the outcome
-        demand.socKwh = 40.0;
+        demand.capacity = 60.0;  // ample, so the gap is not what decides the outcome
+        demand.level = 40.0;
         demand.releaseHour = static_cast<Hours>(i) * 0.2;
         fleet.push_back(demand);
     }

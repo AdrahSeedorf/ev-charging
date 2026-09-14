@@ -32,16 +32,16 @@ struct FeasibilityConfig {
 };
 
 /// A vehicle's situation at the moment a charging decision is needed.
-struct VehicleState {
+struct AgentState {
     int id{0};
     NodeId at{kNoNode};
     NodeId destination{kNoNode};
-    Kwh socKwh{0.0};
-    Kwh batteryKwh{0.0};
-    KwhPer100Km efficiency{18.0};
+    Kwh level{0.0};
+    Kwh capacity{0.0};
+    KwhPer100Km consumption{18.0};
     Hours now{0.0};  ///< simulated clock; zero for the timeless engine
 
-    Km rangeKm() const { return rangeFromEnergy(socKwh, efficiency); }
+    Km rangeKm() const { return rangeFromEnergy(level, consumption); }
 };
 
 /// Enumerates the charging stops a vehicle may legally take next.
@@ -66,16 +66,16 @@ struct VehicleState {
 std::vector<Candidate> buildCandidates(const Network& network,
                                        const Router& router,
                                        const WaitOracle& oracle,
-                                       const VehicleState& vehicle,
+                                       const AgentState& vehicle,
                                        const FeasibilityConfig& config);
 
 /// Candidates for a round-trip top-up mission: drive out to a station, take on
-/// `requiredKwh`, drive home. The Sydney metro project's question.
+/// `requiredAmount`, drive home. The Sydney metro project's question.
 std::vector<Candidate> buildTopUpCandidates(const Network& network,
                                             const Router& router,
                                             const WaitOracle& oracle,
-                                            const VehicleState& vehicle,
-                                            Kwh requiredKwh,
+                                            const AgentState& vehicle,
+                                            Kwh requiredAmount,
                                             const FeasibilityConfig& config);
 
 }  // namespace evnet

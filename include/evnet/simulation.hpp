@@ -18,26 +18,26 @@ namespace evnet {
 /// which station minimises my cost?", a round trip with no destination. The
 /// corridor study asked "I am driving X to Y -- where must I stop?", a journey
 /// with no energy target. Rather than bolt two code paths together, both are
-/// expressed in the same fields and distinguished by `requiredKwh`:
+/// expressed in the same fields and distinguished by `requiredAmount`:
 ///
-///   requiredKwh > 0   -> TopUp mission  (origin == destination, round trip)
-///   requiredKwh == 0  -> Journey mission (drive origin -> destination)
+///   requiredAmount > 0   -> TopUp mission  (origin == destination, round trip)
+///   requiredAmount == 0  -> Journey mission (drive origin -> destination)
 struct Demand {
     int id{0};
     NodeId origin{kNoNode};
     NodeId destination{kNoNode};
-    Kwh batteryKwh{0.0};
-    Kwh socKwh{0.0};  ///< state of charge at the start
-    KwhPer100Km efficiency{18.0};
-    Kwh requiredKwh{0.0};
+    Kwh capacity{0.0};
+    Kwh level{0.0};  ///< state of charge at the start
+    KwhPer100Km consumption{18.0};
+    Kwh requiredAmount{0.0};
     /// When this vehicle enters the system, in hours from the start of the run.
     /// Optional in the CSV (defaults to zero) so stage 1 datasets still load; the
     /// event-driven engine needs it, because a fleet that all departs at once is
     /// not a traffic pattern, it is a thundering herd.
     Hours releaseHour{0.0};
 
-    bool isTopUp() const { return requiredKwh > 0.0; }
-    Km rangeKm() const { return rangeFromEnergy(socKwh, efficiency); }
+    bool isTopUp() const { return requiredAmount > 0.0; }
+    Km rangeKm() const { return rangeFromEnergy(level, consumption); }
 
     static std::vector<Demand> load(const std::string& csvPath);
 };
@@ -128,9 +128,9 @@ private:
     /// Enforces the stranding guard described in the implementation.
     std::vector<Candidate> candidatesFor(NodeId at,
                                          NodeId destination,
-                                         Kwh socKwh,
-                                         Kwh batteryKwh,
-                                         KwhPer100Km efficiency,
+                                         Kwh level,
+                                         Kwh capacity,
+                                         KwhPer100Km consumption,
                                          const StationState& state) const;
 
     const Network* network_;

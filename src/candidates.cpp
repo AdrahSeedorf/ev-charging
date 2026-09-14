@@ -13,7 +13,7 @@ constexpr Kwh kNegligibleKwh = 0.01;
 std::vector<Candidate> buildCandidates(const Network& network,
                                        const Router& router,
                                        const WaitOracle& oracle,
-                                       const VehicleState& vehicle,
+                                       const AgentState& vehicle,
                                        const FeasibilityConfig& config) {
     std::vector<Candidate> candidates;
 
@@ -21,7 +21,7 @@ std::vector<Candidate> buildCandidates(const Network& network,
     if (distanceToDestination == Router::kUnreachable) return candidates;
 
     const Km rangeAfterFullCharge =
-        rangeFromEnergy(vehicle.batteryKwh * (1.0 - config.reserveFraction), vehicle.efficiency);
+        rangeFromEnergy(vehicle.capacity * (1.0 - config.reserveFraction), vehicle.consumption);
 
     // The vehicle's own node is a legitimate option when it has a charger: a car
     // sitting at a charging station can obviously use it. `reachableWithin`
@@ -54,12 +54,12 @@ std::vector<Candidate> buildCandidates(const Network& network,
         }
         if (!onwardOk) continue;
 
-        const Kwh socOnArrival = vehicle.socKwh - energyForDistance(detour, vehicle.efficiency);
+        const Kwh socOnArrival = vehicle.level - energyForDistance(detour, vehicle.consumption);
         if (socOnArrival < 0.0) continue;  // defensive; reachableWithin should prevent this
 
-        const Kwh energyToFinish = energyForDistance(remainingAfter, vehicle.efficiency) +
-                                   vehicle.batteryKwh * config.reserveFraction;
-        const Kwh target = std::min(vehicle.batteryKwh, energyToFinish);
+        const Kwh energyToFinish = energyForDistance(remainingAfter, vehicle.consumption) +
+                                   vehicle.capacity * config.reserveFraction;
+        const Kwh target = std::min(vehicle.capacity, energyToFinish);
         const Kwh energy = target - socOnArrival;
         if (energy <= kNegligibleKwh) continue;
 
@@ -87,8 +87,8 @@ std::vector<Candidate> buildCandidates(const Network& network,
 std::vector<Candidate> buildTopUpCandidates(const Network& network,
                                             const Router& router,
                                             const WaitOracle& oracle,
-                                            const VehicleState& vehicle,
-                                            Kwh requiredKwh,
+                                            const AgentState& vehicle,
+                                            Kwh requiredAmount,
                                             const FeasibilityConfig& config) {
     std::vector<Candidate> candidates;
 
@@ -101,13 +101,13 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
 
         const Km distance =
             candidateNode == vehicle.at ? 0.0 : router.distance(vehicle.at, candidateNode);
-        const Kwh outbound = energyForDistance(distance, vehicle.efficiency);
-        const Kwh socOnArrival = vehicle.socKwh - outbound;
+        const Kwh outbound = energyForDistance(distance, vehicle.consumption);
+        const Kwh socOnArrival = vehicle.level - outbound;
         if (socOnArrival < 0.0) continue;
 
         // The vehicle charges on arrival, so the return leg is funded by the
         // top-up. It still has to have enough left to get home.
-        const Kwh afterCharging = std::min(vehicle.batteryKwh, socOnArrival + requiredKwh);
+        const Kwh afterCharging = std::min(vehicle.capacity, socOnArrival + requiredAmount);
         if (afterCharging < outbound) continue;
 
         const Kwh delivered = afterCharging - socOnArrival;

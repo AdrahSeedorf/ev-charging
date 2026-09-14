@@ -19,13 +19,13 @@ constexpr Kwh kEnergyEpsilon = 1e-6;
 constexpr Dollars kInfiniteCost = std::numeric_limits<Dollars>::infinity();
 
 /// Can the vehicle finish from where it stands, keeping its reserve?
-bool canFinish(const Router& router, const VehicleState& vehicle, double reserveFraction) {
+bool canFinish(const Router& router, const AgentState& vehicle, double reserveFraction) {
     const Km remaining = router.distance(vehicle.at, vehicle.destination);
     if (remaining == Router::kUnreachable) return false;
     if (remaining == 0.0) return true;
-    const Kwh needed = energyForDistance(remaining, vehicle.efficiency) +
-                       vehicle.batteryKwh * reserveFraction;
-    return vehicle.socKwh + kEnergyEpsilon >= needed;
+    const Kwh needed = energyForDistance(remaining, vehicle.consumption) +
+                       vehicle.capacity * reserveFraction;
+    return vehicle.level + kEnergyEpsilon >= needed;
 }
 
 }  // namespace
@@ -42,7 +42,7 @@ GreedyPlanner::GreedyPlanner(const Network& network,
     if (policy_ == nullptr) throw std::invalid_argument("GreedyPlanner requires a policy");
 }
 
-Action GreedyPlanner::decide(const VehicleState& vehicle, const WaitOracle& oracle) const {
+Action GreedyPlanner::decide(const AgentState& vehicle, const WaitOracle& oracle) const {
     if (router_->distance(vehicle.at, vehicle.destination) == Router::kUnreachable) {
         return Action::infeasible("destination unreachable from " + network_->node(vehicle.at).name);
     }
@@ -81,22 +81,22 @@ OptimalPlanner::OptimalPlanner(const Network& network,
     if (levels_ < 2) throw std::invalid_argument("OptimalPlanner needs at least 2 charge levels");
 }
 
-OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
+OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
                                            const WaitOracle& oracle) const {
     Plan plan;
     plan.first = Action::infeasible("no feasible plan");
 
     const std::size_t nodeCount = network_->size();
     const auto levelCount = static_cast<std::size_t>(levels_) + 1;
-    const Kwh step = vehicle.batteryKwh / static_cast<double>(levels_);
+    const Kwh step = vehicle.capacity / static_cast<double>(levels_);
     if (step <= 0.0) return plan;
 
     // Round the starting charge DOWN onto the grid: the planner must never assume
     // more energy than the vehicle actually has, or it will produce plans the
     // simulator cannot execute.
-    const auto startLevel = static_cast<std::size_t>(std::floor(vehicle.socKwh / step));
+    const auto startLevel = static_cast<std::size_t>(std::floor(vehicle.level / step));
     const std::size_t reserveLevel = static_cast<std::size_t>(
-        std::ceil(vehicle.batteryKwh * config_.reserveFraction / step));
+        std::ceil(vehicle.capacity * config_.reserveFraction / step));
 
     if (startLevel >= levelCount) return plan;
 
@@ -188,7 +188,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
 
         for (const auto& edge : network_->neighbours(static_cast<NodeId>(node))) {
             if (mustChargeFirst) break;
-            const Kwh burn = energyForDistance(edge.distanceKm, vehicle.efficiency);
+            const Kwh burn = energyForDistance(edge.distanceKm, vehicle.consumption);
             const auto burnLevels = static_cast<std::size_t>(std::ceil(burn / step));
             if (burnLevels > level) continue;
             const std::size_t remaining = level - burnLevels;
@@ -263,9 +263,9 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
         const Km leg = router_->distance(vehicle.at, nextTarget);
         Kwh exactEnergy = 0.0;
         if (leg != Router::kUnreachable) {
-            const Kwh needed = energyForDistance(leg, vehicle.efficiency) +
-                               vehicle.batteryKwh * config_.reserveFraction;
-            exactEnergy = std::min(vehicle.batteryKwh, needed) - vehicle.socKwh;
+            const Kwh needed = energyForDistance(leg, vehicle.consumption) +
+                               vehicle.capacity * config_.reserveFraction;
+            exactEnergy = std::min(vehicle.capacity, needed) - vehicle.level;
         }
 
         // Two quite different intentions can produce a Charge move, and telling them
@@ -299,7 +299,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
     return plan;
 }
 
-Action OptimalPlanner::decide(const VehicleState& vehicle, const WaitOracle& oracle) const {
+Action OptimalPlanner::decide(const AgentState& vehicle, const WaitOracle& oracle) const {
     if (router_->distance(vehicle.at, vehicle.destination) == Router::kUnreachable) {
         return Action::infeasible("destination unreachable from " + network_->node(vehicle.at).name);
     }
@@ -315,7 +315,7 @@ Action OptimalPlanner::decide(const VehicleState& vehicle, const WaitOracle& ora
     return plan.first;
 }
 
-Dollars OptimalPlanner::planCost(const VehicleState& vehicle, const WaitOracle& oracle) const {
+Dollars OptimalPlanner::planCost(const AgentState& vehicle, const WaitOracle& oracle) const {
     const Plan plan = solve(vehicle, oracle);
     return plan.feasible ? plan.cost : kInfiniteCost;
 }

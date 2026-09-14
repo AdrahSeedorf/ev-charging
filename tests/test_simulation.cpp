@@ -50,12 +50,12 @@ TEST_CASE("energy balances over a completed trip", "[simulation]") {
     // Nothing may be created or destroyed: starting charge plus everything taken
     // on must cover the distance driven, and the surplus is the reserve the
     // allocator deliberately holds back.
-    const Kwh supplied = demand.socKwh + totalCharged(result);
-    const Kwh consumed = energyForDistance(result.distanceKm, demand.efficiency);
+    const Kwh supplied = demand.level + totalCharged(result);
+    const Kwh consumed = energyForDistance(result.distanceKm, demand.consumption);
     CHECK(supplied >= consumed);
 
     const Kwh surplus = supplied - consumed;
-    const Kwh reserve = demand.batteryKwh * allocator.config().reserveFraction;
+    const Kwh reserve = demand.capacity * allocator.config().reserveFraction;
     CHECK_THAT(surplus, WithinAbs(reserve, 1e-6));
 }
 
@@ -68,7 +68,7 @@ TEST_CASE("no charging happens when the trip is already within range", "[simulat
 
     Demand demand = testing::corridorJourney();
     demand.destination = 1;  // Start -> Mid1 is only 100 km
-    demand.socKwh = 25.0;    // 138 km of range
+    demand.level = 25.0;    // 138 km of range
 
     const TripResult result = allocator.runOne(demand, policy, state);
     REQUIRE(result.completed);
@@ -86,7 +86,7 @@ TEST_CASE("a vehicle with too little charge is reported stranded, not silently d
     StationState state(network);
 
     Demand demand = testing::corridorJourney();
-    demand.socKwh = 5.0;  // 27 km of range; the first station is 100 km away
+    demand.level = 5.0;  // 27 km of range; the first station is 100 km away
 
     const TripResult result = allocator.runOne(demand, policy, state);
     CHECK_FALSE(result.completed);
@@ -110,7 +110,7 @@ TEST_CASE("the progress guard prevents backtracking to a cheaper station", "[sim
     Demand demand = testing::corridorJourney();
     demand.origin = 1;       // begin at Mid1
     demand.destination = 3;  // heading to Target
-    demand.socKwh = 20.0;
+    demand.level = 20.0;
 
     const TripResult result = allocator.runOne(demand, policy, state);
     REQUIRE(result.completed);
@@ -182,10 +182,10 @@ TEST_CASE("a top-up mission is a round trip to a single station", "[simulation]"
     demand.id = 7;
     demand.origin = 0;
     demand.destination = 0;  // origin == destination marks a top-up
-    demand.batteryKwh = 60.0;
-    demand.socKwh = 40.0;  // 222 km of range
-    demand.efficiency = 18.0;
-    demand.requiredKwh = 15.0;
+    demand.capacity = 60.0;
+    demand.level = 40.0;  // 222 km of range
+    demand.consumption = 18.0;
+    demand.requiredAmount = 15.0;
 
     REQUIRE(demand.isTopUp());
     const TripResult result = allocator.runOne(demand, policy, state);
@@ -245,7 +245,7 @@ TEST_CASE("a vehicle at a station can charge without moving", "[simulation]") {
 
     Demand demand = testing::corridorJourney();
     demand.destination = 1;  // 100 km away
-    demand.socKwh = 10.0;    // only 55 km of range: cannot reach, must charge here
+    demand.level = 10.0;    // only 55 km of range: cannot reach, must charge here
 
     const TripResult result = allocator.runOne(demand, policy, state);
 
@@ -271,8 +271,8 @@ TEST_CASE("charging in place cannot loop forever", "[simulation]") {
 
     Demand demand = testing::corridorJourney();
     demand.destination = 3;
-    demand.batteryKwh = 12.0;  // 66 km full range; every 100 km leg is impossible
-    demand.socKwh = 2.0;
+    demand.capacity = 12.0;  // 66 km full range; every 100 km leg is impossible
+    demand.level = 2.0;
 
     const TripResult result = allocator.runOne(demand, policy, state);
     CHECK_FALSE(result.completed);
@@ -293,8 +293,8 @@ TEST_CASE("greedy price minimisation trades many stops for small savings",
     const Allocator allocator(network, router);
 
     Demand demand = testing::corridorJourney();
-    demand.batteryKwh = 40.0;
-    demand.socKwh = 20.0;
+    demand.capacity = 40.0;
+    demand.level = 20.0;
 
     StationState cheapState(network);
     const auto cheap = allocator.runOne(demand, CheapestEnergyPolicy(), cheapState);

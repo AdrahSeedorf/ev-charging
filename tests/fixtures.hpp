@@ -70,10 +70,10 @@ inline Demand corridorJourney(Kwh soc = 20.0) {
     demand.id = 1;
     demand.origin = 0;
     demand.destination = 3;
-    demand.batteryKwh = 30.0;
-    demand.socKwh = soc;
-    demand.efficiency = 18.0;
-    demand.requiredKwh = 0.0;
+    demand.capacity = 30.0;
+    demand.level = soc;
+    demand.consumption = 18.0;
+    demand.requiredAmount = 0.0;
     return demand;
 }
 

@@ -31,20 +31,20 @@ std::vector<Demand> Demand::load(const std::string& csvPath) {
         demand.id = row.integer("id");
         demand.origin = row.integer("origin_id");
         demand.destination = row.integer("destination_id");
-        demand.batteryKwh = row.number("battery_kwh");
-        demand.socKwh = row.number("soc_kwh");
-        demand.efficiency = row.number("efficiency_kwh_per_100km");
-        demand.requiredKwh = row.number("required_kwh");
+        demand.capacity = row.number("battery_kwh");
+        demand.level = row.number("soc_kwh");
+        demand.consumption = row.number("efficiency_kwh_per_100km");
+        demand.requiredAmount = row.number("required_kwh");
         // Optional: absent in stage 1 datasets, which then all release at t=0.
         if (row.has("release_hour")) demand.releaseHour = row.number("release_hour");
 
-        if (demand.batteryKwh <= 0.0) {
+        if (demand.capacity <= 0.0) {
             throw std::runtime_error("demand " + std::to_string(demand.id) + " has no battery capacity");
         }
-        if (demand.efficiency <= 0.0) {
-            throw std::runtime_error("demand " + std::to_string(demand.id) + " has non-positive efficiency");
+        if (demand.consumption <= 0.0) {
+            throw std::runtime_error("demand " + std::to_string(demand.id) + " has non-positive consumption");
         }
-        if (demand.socKwh > demand.batteryKwh) {
+        if (demand.level > demand.capacity) {
             throw std::runtime_error("demand " + std::to_string(demand.id) +
                                      " starts with more charge than its battery holds");
         }
@@ -58,21 +58,21 @@ Allocator::Allocator(const Network& network, const Router& router, SimulationCon
 
 std::vector<Candidate> Allocator::candidatesFor(NodeId at,
                                                 NodeId destination,
-                                                Kwh socKwh,
-                                                Kwh batteryKwh,
-                                                KwhPer100Km efficiency,
+                                                Kwh level,
+                                                Kwh capacity,
+                                                KwhPer100Km consumption,
                                                 const StationState& state) const {
     // Delegates to the shared builder in candidates.cpp. The feasibility rules --
     // both stranding guards and the energy arithmetic -- are subtle enough that
     // having two copies drifting apart would be the likeliest source of a silent
     // bug, so the static and event-driven engines share one implementation and
     // differ only in how they answer the congestion question.
-    VehicleState vehicle;
+    AgentState vehicle;
     vehicle.at = at;
     vehicle.destination = destination;
-    vehicle.socKwh = socKwh;
-    vehicle.batteryKwh = batteryKwh;
-    vehicle.efficiency = efficiency;
+    vehicle.level = level;
+    vehicle.capacity = capacity;
+    vehicle.consumption = consumption;
     vehicle.now = 0.0;  // this engine has no clock
 
     FeasibilityConfig feasibility;
@@ -92,7 +92,7 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
     }
 
     NodeId at = demand.origin;
-    Kwh soc = demand.socKwh;
+    Kwh soc = demand.level;
 
     for (int stop = 0; stop <= config_.maxStopsPerTrip; ++stop) {
         const Km remaining = router_->distance(at, demand.destination);
@@ -103,7 +103,7 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
 
         // Can we finish from here, keeping the reserve intact?
         const Kwh needed =
-            energyForDistance(remaining, demand.efficiency) + demand.batteryKwh * config_.reserveFraction;
+            energyForDistance(remaining, demand.consumption) + demand.capacity * config_.reserveFraction;
         if (soc + kEnergyEpsilon >= needed || remaining == 0.0) {
             result.distanceKm += remaining;
             result.travelCost = result.distanceKm * config_.travelCostPerKm;
@@ -111,8 +111,8 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
             return result;
         }
 
-        const auto candidates = candidatesFor(at, demand.destination, soc, demand.batteryKwh,
-                                              demand.efficiency, state);
+        const auto candidates = candidatesFor(at, demand.destination, soc, demand.capacity,
+                                              demand.consumption, state);
         if (candidates.empty()) {
             result.failure = "stranded at " + network_->node(at).name +
                              ": no feasible charging stop within range";
@@ -128,7 +128,7 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
         // Drive to the chosen station, then charge. The resulting state of charge
         // is taken from the candidate rather than recomputed here, so it is exact.
         result.distanceKm += chosen->detourKm;
-        soc = std::min(demand.batteryKwh, chosen->socAfterCharge);
+        soc = std::min(demand.capacity, chosen->socAfterCharge);
 
         state.enqueue(chosen->node);
         result.stops.push_back(Stop{chosen->node, chosen->energyKwh, chosen->energyCost,
@@ -153,13 +153,13 @@ TripResult Allocator::runTopUp(const Demand& demand, const Policy& policy, Stati
         return result;
     }
 
-    VehicleState vehicle;
+    AgentState vehicle;
     vehicle.id = demand.id;
     vehicle.at = demand.origin;
     vehicle.destination = demand.origin;
-    vehicle.socKwh = demand.socKwh;
-    vehicle.batteryKwh = demand.batteryKwh;
-    vehicle.efficiency = demand.efficiency;
+    vehicle.level = demand.level;
+    vehicle.capacity = demand.capacity;
+    vehicle.consumption = demand.consumption;
     vehicle.now = 0.0;
 
     FeasibilityConfig feasibility;
@@ -167,11 +167,11 @@ TripResult Allocator::runTopUp(const Demand& demand, const Policy& policy, Stati
     feasibility.reserveFraction = config_.reserveFraction;
 
     const auto candidates =
-        buildTopUpCandidates(*network_, *router_, state, vehicle, demand.requiredKwh, feasibility);
+        buildTopUpCandidates(*network_, *router_, state, vehicle, demand.requiredAmount, feasibility);
 
     if (candidates.empty()) {
         result.failure = "no reachable charging station can serve a " +
-                         std::to_string(static_cast<int>(demand.requiredKwh)) + " kWh top-up from " +
+                         std::to_string(static_cast<int>(demand.requiredAmount)) + " kWh top-up from " +
                          network_->node(demand.origin).name;
         return result;
     }

@@ -122,8 +122,8 @@ TEST_CASE("energy balances across an event-driven trip", "[simulator]") {
     const Kwh charged = std::accumulate(
         trips[0].stops.begin(), trips[0].stops.end(), 0.0,
         [](Kwh sum, const Stop& s) { return sum + s.energyKwh; });
-    const Kwh consumed = energyForDistance(trips[0].distanceKm, demand.efficiency);
-    CHECK(demand.socKwh + charged + 1e-6 >= consumed);
+    const Kwh consumed = energyForDistance(trips[0].distanceKm, demand.consumption);
+    CHECK(demand.level + charged + 1e-6 >= consumed);
 }
 
 TEST_CASE("every charging session in a trip has a matching service record", "[simulator]") {
@@ -180,7 +180,7 @@ TEST_CASE("a vehicle that cannot move is reported, not lost", "[simulator]") {
     auto planner = greedy(network, router, "cheapest", fastConfig());
 
     Demand stuck = testing::corridorJourney();
-    stuck.socKwh = 5.0;  // 27 km of range; the nearest station is 100 km off
+    stuck.level = 5.0;  // 27 km of range; the nearest station is 100 km off
 
     StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({stuck}, *planner, runtime);
@@ -199,10 +199,10 @@ TEST_CASE("top-up missions run through the event engine too", "[simulator]") {
     topUp.id = 5;
     topUp.origin = 0;
     topUp.destination = 0;
-    topUp.batteryKwh = 60.0;
-    topUp.socKwh = 40.0;
-    topUp.efficiency = 18.0;
-    topUp.requiredKwh = 15.0;
+    topUp.capacity = 60.0;
+    topUp.level = 40.0;
+    topUp.consumption = 18.0;
+    topUp.requiredAmount = 15.0;
 
     StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({topUp}, *planner, runtime);
@@ -225,8 +225,8 @@ TEST_CASE("the optimal planner beats greedy on generalised cost when uncongested
 
     const Simulator simulator(network, router, config);
     Demand demand = testing::corridorJourney();
-    demand.batteryKwh = 40.0;
-    demand.socKwh = 20.0;
+    demand.capacity = 40.0;
+    demand.level = 20.0;
 
     Dollars bestGreedy = std::numeric_limits<Dollars>::infinity();
     for (const auto& name : {"farthest", "cheapest", "min-wait", "generalised"}) {
@@ -255,8 +255,8 @@ TEST_CASE("session overhead makes fewer, larger stops preferable", "[planner]") 
     const Router router(network);
 
     Demand demand = testing::corridorJourney();
-    demand.batteryKwh = 40.0;
-    demand.socKwh = 20.0;
+    demand.capacity = 40.0;
+    demand.level = 20.0;
 
     const auto stopsWithOverhead = [&](Hours overhead) {
         SimulatorConfig config = fastConfig();
@@ -292,12 +292,12 @@ TEST_CASE("planners agree that a vehicle with plenty of charge should just drive
     const Router router(network);
     const StationRuntime runtime(network, 0.0);
 
-    VehicleState vehicle;
+    AgentState vehicle;
     vehicle.at = 0;
     vehicle.destination = 1;  // 100 km
-    vehicle.batteryKwh = 60.0;
-    vehicle.socKwh = 50.0;    // 277 km of range
-    vehicle.efficiency = 18.0;
+    vehicle.capacity = 60.0;
+    vehicle.level = 50.0;    // 277 km of range
+    vehicle.consumption = 18.0;
 
     for (const auto& name : plannerNames()) {
         const auto planner = makePlanner(name, network, router, 20.0);
@@ -344,8 +344,8 @@ TEST_CASE("the optimal planner may arrive at a charger below its reserve", "[pla
     const Simulator simulator(network, router, config);
 
     Demand demand = testing::corridorJourney();
-    demand.batteryKwh = 40.0;  // 222 km on a full charge, 200 km once the reserve is held
-    demand.socKwh = 20.0;      // 111 km: reaches Mid1 with ~2 kWh, under the 4 kWh
+    demand.capacity = 40.0;  // 222 km on a full charge, 200 km once the reserve is held
+    demand.level = 20.0;      // 111 km: reaches Mid1 with ~2 kWh, under the 4 kWh
                                // reserve but standing at a charger
 
     auto optimal = makePlanner("optimal", network, router, config.valueOfTimePerHour,
@@ -398,9 +398,9 @@ TEST_CASE("but it may not drive away from one still below its reserve", "[planne
     demand.id = 1;
     demand.origin = 0;
     demand.destination = 3;
-    demand.batteryKwh = 40.0;  // reserve is 4 kWh
-    demand.socKwh = 13.0;      // 72 km of range: reaches Near with 2.2 kWh, under reserve
-    demand.efficiency = 18.0;
+    demand.capacity = 40.0;  // reserve is 4 kWh
+    demand.level = 13.0;      // 72 km of range: reaches Near with 2.2 kWh, under reserve
+    demand.consumption = 18.0;
 
     auto optimal = makePlanner("optimal", network, router, config.valueOfTimePerHour,
                                config.feasibility());

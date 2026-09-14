@@ -301,9 +301,9 @@ int cmdRouteEvents(const Options& options) {
     demand.id = 1;
     demand.origin = from;
     demand.destination = to;
-    demand.batteryKwh = options.battery;
-    demand.socKwh = options.soc >= 0.0 ? options.soc : options.battery * 0.2;
-    if (demand.socKwh > demand.batteryKwh) fail("--soc cannot exceed --battery");
+    demand.capacity = options.battery;
+    demand.level = options.soc >= 0.0 ? options.soc : options.battery * 0.2;
+    if (demand.level > demand.capacity) fail("--soc cannot exceed --battery");
 
     const SimulatorConfig config = makeSimulatorConfig(options);
     const auto planner = makePlanner(options.policy, network, router,
@@ -314,8 +314,8 @@ int cmdRouteEvents(const Options& options) {
     const TimedTrip& trip = trips.front();
 
     std::cout << "Charging plan (planner: " << planner->name() << ", battery "
-              << std::setprecision(0) << demand.batteryKwh << " kWh, starting charge "
-              << demand.socKwh << " kWh -> range " << std::setprecision(0) << demand.rangeKm()
+              << std::setprecision(0) << demand.capacity << " kWh, starting charge "
+              << demand.level << " kWh -> range " << std::setprecision(0) << demand.rangeKm()
               << " km)\n";
     if (!trip.completed) {
         std::cout << "  INCOMPLETE: " << trip.failure << "\n";
@@ -365,9 +365,9 @@ int cmdRouteStatic(const Options& options) {
     demand.id = 1;
     demand.origin = from;
     demand.destination = to;
-    demand.batteryKwh = options.battery;
-    demand.socKwh = options.soc >= 0.0 ? options.soc : options.battery * 0.2;
-    if (demand.socKwh > demand.batteryKwh) fail("--soc cannot exceed --battery");
+    demand.capacity = options.battery;
+    demand.level = options.soc >= 0.0 ? options.soc : options.battery * 0.2;
+    if (demand.level > demand.capacity) fail("--soc cannot exceed --battery");
 
     const Allocator allocator(network, router, makeConfig(options));
     const auto policy = makePolicy(options.policy, options.valueOfTime);
@@ -375,7 +375,7 @@ int cmdRouteStatic(const Options& options) {
     const TripResult result = allocator.runOne(demand, *policy, state);
 
     std::cout << "Charging plan (policy: " << policy->name() << ", battery " << std::setprecision(0)
-              << demand.batteryKwh << " kWh, starting charge " << demand.socKwh << " kWh -> range "
+              << demand.capacity << " kWh, starting charge " << demand.level << " kWh -> range "
               << std::setprecision(0) << demand.rangeKm() << " km)\n";
     if (!result.completed) {
         std::cout << "  INCOMPLETE: " << result.failure << "\n";

@@ -46,7 +46,7 @@ class Planner {
 public:
     virtual ~Planner() = default;
     virtual std::string name() const = 0;
-    virtual Action decide(const VehicleState& vehicle, const WaitOracle& oracle) const = 0;
+    virtual Action decide(const AgentState& vehicle, const WaitOracle& oracle) const = 0;
 
     /// How this planner ranks a set of already-enumerated options.
     ///
@@ -68,7 +68,7 @@ public:
                   FeasibilityConfig config = {});
 
     std::string name() const override { return policy_->name(); }
-    Action decide(const VehicleState& vehicle, const WaitOracle& oracle) const override;
+    Action decide(const AgentState& vehicle, const WaitOracle& oracle) const override;
     const Policy& scoringPolicy() const override { return *policy_; }
 
 private:
@@ -109,12 +109,12 @@ public:
                    int chargeLevels = 40);
 
     std::string name() const override { return "optimal"; }
-    Action decide(const VehicleState& vehicle, const WaitOracle& oracle) const override;
+    Action decide(const AgentState& vehicle, const WaitOracle& oracle) const override;
     const Policy& scoringPolicy() const override { return scoring_; }
 
     /// Total generalised cost of the best plan from this state, or infinity if no
     /// plan exists. Exposed for tests and for reporting the optimality gap.
-    Dollars planCost(const VehicleState& vehicle, const WaitOracle& oracle) const;
+    Dollars planCost(const AgentState& vehicle, const WaitOracle& oracle) const;
 
 private:
     struct Plan {
@@ -122,7 +122,7 @@ private:
         Action first;
         bool feasible{false};
     };
-    Plan solve(const VehicleState& vehicle, const WaitOracle& oracle) const;
+    Plan solve(const AgentState& vehicle, const WaitOracle& oracle) const;
 
     const Network* network_;
     const Router* router_;
