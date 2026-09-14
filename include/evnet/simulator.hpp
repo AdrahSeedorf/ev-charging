@@ -11,7 +11,7 @@
 
 namespace evnet {
 
-/// One vehicle's journey with times that were measured, not assumed.
+/// One agent's journey with times that were measured, not assumed.
 struct TimedTrip {
     int demandId{0};
     bool completed{false};
@@ -87,7 +87,7 @@ struct SimulatorConfig {
 
 /// Discrete-event simulation of a fleet over a charging network.
 ///
-/// This is what stage 2 adds. Stage 1's Allocator walked each vehicle to
+/// This is what stage 2 adds. Stage 1's Allocator walked each agent to
 /// completion in isolation and incremented a counter at every station it used, so
 /// congestion was a tally rather than a process: nothing ever departed, waits were
 /// an index instead of a duration, and driving took no time at all.
@@ -96,12 +96,12 @@ struct SimulatorConfig {
 /// real hours on the road, occupy a charger for a computed duration and then free
 /// it. Waits are what the simulation measured, not what a formula guessed.
 ///
-/// There is exactly one event type -- a vehicle reaching a node -- because charger
+/// There is exactly one event type -- a agent reaching a node -- because charger
 /// admission is resolved synchronously against the earliest-free charger. See the
 /// FIFO-equivalence argument on StationRuntime for why that is exact rather than an
 /// approximation.
 ///
-/// Vehicles replan on every arrival, so a vehicle heading for a station that turns
+/// Vehicles replan on every arrival, so a agent heading for a station that turns
 /// out to be busier than estimated can change its mind en route.
 class Simulator {
 public:

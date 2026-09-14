@@ -11,7 +11,7 @@
 
 namespace evnet {
 
-/// One vehicle's requirement. The unified demand type.
+/// One agent's requirement. The unified demand type.
 ///
 /// The two legacy projects asked structurally different questions, and this
 /// struct is where they meet. The Sydney study asked "I am at X and need N kWh --
@@ -30,7 +30,7 @@ struct Demand {
     Kwh level{0.0};  ///< state of charge at the start
     KwhPer100Km consumption{18.0};
     Kwh requiredAmount{0.0};
-    /// When this vehicle enters the system, in hours from the start of the run.
+    /// When this agent enters the system, in hours from the start of the run.
     /// Optional in the CSV (defaults to zero) so stage 1 datasets still load; the
     /// event-driven engine needs it, because a fleet that all departs at once is
     /// not a traffic pattern, it is a thundering herd.
@@ -104,7 +104,7 @@ public:
 
     Allocator(const Network& network, const Router& router, SimulationConfig config = {});
 
-    /// Mutates `state`: each vehicle's chosen stop increments that station's
+    /// Mutates `state`: each agent's chosen stop increments that station's
     /// queue, so vehicles processed later see the congestion created by those
     /// before them. Demand order therefore matters, which is a property of the
     /// problem rather than a defect.

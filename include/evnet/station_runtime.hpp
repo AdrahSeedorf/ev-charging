@@ -8,7 +8,7 @@
 
 namespace evnet {
 
-/// One vehicle's use of one charger, with times that were measured rather than
+/// One agent's use of one charger, with times that were measured rather than
 /// assumed. Every congestion statistic the toolkit reports derives from these.
 struct ServiceRecord {
     int vehicleId{0};
@@ -31,7 +31,7 @@ struct ServiceRecord {
 /// results. Here a charger is occupied for a computed duration and then released.
 ///
 /// DESIGN NOTE -- why there are no queue events.
-/// A vehicle wanting to charge is assigned the charger that frees up soonest, and
+/// A agent wanting to charge is assigned the charger that frees up soonest, and
 /// begins at max(its arrival, that charger's free time). Because the simulator
 /// processes arrivals in nondecreasing time order, this is provably equivalent to
 /// a single station-wide FIFO queue: an earlier arrival is always assigned first
@@ -45,9 +45,9 @@ public:
     /// rather than a bookkeeping entry.
     explicit StationRuntime(const Network& network, Hours stopOverheadHours = 0.1);
 
-    /// Estimated queueing delay for a vehicle reaching `node` at `arrivalTime`,
+    /// Estimated queueing delay for a agent reaching `node` at `arrivalTime`,
     /// given everything committed so far. This is what planners consult; unlike
-    /// stage 1's estimate it actually depends on when the vehicle turns up.
+    /// stage 1's estimate it actually depends on when the agent turns up.
     Hours expectedWait(NodeId node, Hours arrivalTime) const override;
     Hours chargeTime(NodeId node, Kwh energy) const override;
 

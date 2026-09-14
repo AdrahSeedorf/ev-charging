@@ -8,7 +8,7 @@
 namespace evnet {
 namespace {
 
-/// One scheduled moment: vehicle `index` becomes ready to act at `time`, having
+/// One scheduled moment: agent `index` becomes ready to act at `time`, having
 /// reached whatever node it was travelling to (or finished charging where it was).
 struct Event {
     Hours time{0.0};
@@ -23,7 +23,7 @@ struct Event {
     }
 };
 
-/// A vehicle in flight.
+/// A agent in flight.
 struct Runner {
     NodeId at{kNoNode};
     Kwh soc{0.0};
@@ -77,19 +77,19 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
             continue;
         }
 
-        AgentState vehicle;
-        vehicle.id = demand.id;
-        vehicle.at = runner.at;
-        vehicle.destination = demand.destination;
-        vehicle.level = runner.soc;
-        vehicle.capacity = demand.capacity;
-        vehicle.consumption = demand.consumption;
-        vehicle.now = event.time;
+        AgentState agent;
+        agent.id = demand.id;
+        agent.at = runner.at;
+        agent.destination = demand.destination;
+        agent.level = runner.soc;
+        agent.capacity = demand.capacity;
+        agent.consumption = demand.consumption;
+        agent.now = event.time;
 
         // A top-up mission is a single round trip with one decision, so it is
         // resolved in one step rather than driven through the arrival loop.
         if (demand.isTopUp()) {
-            const auto candidates = buildTopUpCandidates(*network_, *router_, runtime, vehicle,
+            const auto candidates = buildTopUpCandidates(*network_, *router_, runtime, agent,
                                                          demand.requiredAmount, feasibility);
             const Candidate* chosen =
                 candidates.empty() ? nullptr : planner.scoringPolicy().choose(candidates);
@@ -119,7 +119,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
             continue;
         }
 
-        const Action action = planner.decide(vehicle, runtime);
+        const Action action = planner.decide(agent, runtime);
 
         switch (action.kind) {
             case Action::Kind::DriveToDestination: {
@@ -169,7 +169,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                 runner.trip.energyCost += cost;
                 runner.trip.waitHours += record.wait();
                 runner.trip.serviceHours += record.service();
-                // The vehicle is occupied until it unplugs.
+                // The agent is occupied until it unplugs.
                 schedule.push(Event{record.finish, event.index});
                 break;
             }

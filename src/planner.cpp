@@ -15,17 +15,17 @@ namespace {
 /// a fixed underlying type trips older GCC parsers.
 enum class Move : unsigned char { None, Drive, Charge };
 
-constexpr Kwh kEnergyEpsilon = 1e-6;
+constexpr Kwh kResourceEpsilon = 1e-6;
 constexpr Dollars kInfiniteCost = std::numeric_limits<Dollars>::infinity();
 
-/// Can the vehicle finish from where it stands, keeping its reserve?
-bool canFinish(const Router& router, const AgentState& vehicle, double reserveFraction) {
-    const Km remaining = router.distance(vehicle.at, vehicle.destination);
+/// Can the agent finish from where it stands, keeping its reserve?
+bool canFinish(const Router& router, const AgentState& agent, double reserveFraction) {
+    const Km remaining = router.distance(agent.at, agent.destination);
     if (remaining == Router::kUnreachable) return false;
     if (remaining == 0.0) return true;
-    const Kwh needed = energyForDistance(remaining, vehicle.consumption) +
-                       vehicle.capacity * reserveFraction;
-    return vehicle.level + kEnergyEpsilon >= needed;
+    const Kwh needed = energyForDistance(remaining, agent.consumption) +
+                       agent.capacity * reserveFraction;
+    return agent.level + kResourceEpsilon >= needed;
 }
 
 }  // namespace
@@ -42,24 +42,24 @@ GreedyPlanner::GreedyPlanner(const Network& network,
     if (policy_ == nullptr) throw std::invalid_argument("GreedyPlanner requires a policy");
 }
 
-Action GreedyPlanner::decide(const AgentState& vehicle, const WaitOracle& oracle) const {
-    if (router_->distance(vehicle.at, vehicle.destination) == Router::kUnreachable) {
-        return Action::infeasible("destination unreachable from " + network_->node(vehicle.at).name);
+Action GreedyPlanner::decide(const AgentState& agent, const WaitOracle& oracle) const {
+    if (router_->distance(agent.at, agent.destination) == Router::kUnreachable) {
+        return Action::infeasible("destination unreachable from " + network_->node(agent.at).name);
     }
-    if (canFinish(*router_, vehicle, config_.reserveFraction)) {
+    if (canFinish(*router_, agent, config_.reserveFraction)) {
         return Action::driveToDestination();
     }
 
-    const auto candidates = buildCandidates(*network_, *router_, oracle, vehicle, config_);
+    const auto candidates = buildCandidates(*network_, *router_, oracle, agent, config_);
     if (candidates.empty()) {
-        return Action::infeasible("stranded at " + network_->node(vehicle.at).name +
+        return Action::infeasible("stranded at " + network_->node(agent.at).name +
                                   ": no feasible charging stop within range");
     }
 
     const Candidate* chosen = policy_->choose(candidates);
     if (chosen == nullptr) return Action::infeasible("policy returned no choice");
 
-    if (chosen->node == vehicle.at) return Action::serviceHere(chosen->amount);
+    if (chosen->node == agent.at) return Action::serviceHere(chosen->amount);
     return Action::driveTo(chosen->node);
 }
 
@@ -81,22 +81,22 @@ OptimalPlanner::OptimalPlanner(const Network& network,
     if (levels_ < 2) throw std::invalid_argument("OptimalPlanner needs at least 2 charge levels");
 }
 
-OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
+OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
                                            const WaitOracle& oracle) const {
     Plan plan;
     plan.first = Action::infeasible("no feasible plan");
 
     const std::size_t nodeCount = network_->size();
     const auto levelCount = static_cast<std::size_t>(levels_) + 1;
-    const Kwh step = vehicle.capacity / static_cast<double>(levels_);
+    const Kwh step = agent.capacity / static_cast<double>(levels_);
     if (step <= 0.0) return plan;
 
     // Round the starting charge DOWN onto the grid: the planner must never assume
-    // more energy than the vehicle actually has, or it will produce plans the
+    // more energy than the agent actually has, or it will produce plans the
     // simulator cannot execute.
-    const auto startLevel = static_cast<std::size_t>(std::floor(vehicle.level / step));
+    const auto startLevel = static_cast<std::size_t>(std::floor(agent.level / step));
     const std::size_t reserveLevel = static_cast<std::size_t>(
-        std::ceil(vehicle.capacity * config_.reserveFraction / step));
+        std::ceil(agent.capacity * config_.reserveFraction / step));
 
     if (startLevel >= levelCount) return plan;
 
@@ -115,17 +115,17 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
     std::vector<Hours> waitAt(nodeCount, 0.0);
     for (const auto& node : network_->nodes()) {
         if (!node.hasStation()) continue;
-        const Km reach = router_->distance(vehicle.at, node.id);
+        const Km reach = router_->distance(agent.at, node.id);
         const Hours arrival =
-            reach == Router::kUnreachable ? vehicle.now
-                                          : vehicle.now + drivingTime(reach, config_.speedKmh);
+            reach == Router::kUnreachable ? agent.now
+                                          : agent.now + drivingTime(reach, config_.speedKmh);
         waitAt[static_cast<std::size_t>(node.id)] = oracle.expectedWait(node.id, arrival);
     }
 
     using Entry = std::pair<Dollars, std::size_t>;
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> frontier;
 
-    const std::size_t startState = index(static_cast<std::size_t>(vehicle.at), startLevel);
+    const std::size_t startState = index(static_cast<std::size_t>(agent.at), startLevel);
     best[startState] = 0.0;
     frontier.emplace(0.0, startState);
 
@@ -144,7 +144,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
         const std::size_t node = state / levelCount;
         const std::size_t level = state % levelCount;
 
-        if (static_cast<NodeId>(node) == vehicle.destination && level >= reserveLevel) {
+        if (static_cast<NodeId>(node) == agent.destination && level >= reserveLevel) {
             goalState = state;
             plan.cost = cost;
             plan.feasible = true;
@@ -173,7 +173,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
         // The effect is small but it is a free lunch, and it flatters this planner in
         // exactly the comparison the toolkit exists to make: on a 62-station metro
         // network the old rule understated the fleet's mean generalised cost by about
-        // $0.05 a trip, all of it borrowed against a safety margin the vehicle never
+        // $0.05 a trip, all of it borrowed against a safety margin the agent never
         // restored.
         //
         // Note the guard is narrow on purpose: it bites only where a charger is actually
@@ -188,12 +188,12 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
 
         for (const auto& edge : network_->neighbours(static_cast<NodeId>(node))) {
             if (mustChargeFirst) break;
-            const Kwh burn = energyForDistance(edge.distanceKm, vehicle.consumption);
+            const Kwh burn = energyForDistance(edge.distanceKm, agent.consumption);
             const auto burnLevels = static_cast<std::size_t>(std::ceil(burn / step));
             if (burnLevels > level) continue;
             const std::size_t remaining = level - burnLevels;
 
-            // The reserve exists so a vehicle is never stranded between servers, so
+            // The reserve exists so a agent is never stranded between servers, so
             // it is required on arrival at a plain waypoint but not at a station --
             // rolling into a charger nearly empty is the entire point of the charger.
             //
@@ -248,7 +248,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
         // than its better routing saved. So the level arithmetic decides WHERE and
         // roughly how much, and then the exact amount required to reach the next
         // planned charging node (or the destination) is computed off-grid.
-        NodeId nextTarget = vehicle.destination;
+        NodeId nextTarget = agent.destination;
         for (std::size_t i = 2; i < path.size(); ++i) {
             if (via[path[i]] == Move::Charge) {
                 nextTarget = static_cast<NodeId>(path[i] / levelCount);
@@ -260,12 +260,12 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
         const std::size_t toLevel = path[1] % levelCount;
         const Kwh gridEnergy = static_cast<double>(toLevel - fromLevel) * step;
 
-        const Km leg = router_->distance(vehicle.at, nextTarget);
+        const Km leg = router_->distance(agent.at, nextTarget);
         Kwh exactEnergy = 0.0;
         if (leg != Router::kUnreachable) {
-            const Kwh needed = energyForDistance(leg, vehicle.consumption) +
-                               vehicle.capacity * config_.reserveFraction;
-            exactEnergy = std::min(vehicle.capacity, needed) - vehicle.level;
+            const Kwh needed = energyForDistance(leg, agent.consumption) +
+                               agent.capacity * config_.reserveFraction;
+            exactEnergy = std::min(agent.capacity, needed) - agent.level;
         }
 
         // Two quite different intentions can produce a Charge move, and telling them
@@ -282,7 +282,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
         // what separates the second case from rounding noise in the first.
         const bool bulkBuying = gridEnergy > exactEnergy + step;
         Kwh energy = bulkBuying ? gridEnergy : exactEnergy;
-        if (energy <= kEnergyEpsilon) energy = gridEnergy;
+        if (energy <= kResourceEpsilon) energy = gridEnergy;
 
         plan.first = Action::serviceHere(energy);
         return plan;
@@ -299,24 +299,24 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
     return plan;
 }
 
-Action OptimalPlanner::decide(const AgentState& vehicle, const WaitOracle& oracle) const {
-    if (router_->distance(vehicle.at, vehicle.destination) == Router::kUnreachable) {
-        return Action::infeasible("destination unreachable from " + network_->node(vehicle.at).name);
+Action OptimalPlanner::decide(const AgentState& agent, const WaitOracle& oracle) const {
+    if (router_->distance(agent.at, agent.destination) == Router::kUnreachable) {
+        return Action::infeasible("destination unreachable from " + network_->node(agent.at).name);
     }
-    if (canFinish(*router_, vehicle, config_.reserveFraction)) {
+    if (canFinish(*router_, agent, config_.reserveFraction)) {
         return Action::driveToDestination();
     }
 
-    const Plan plan = solve(vehicle, oracle);
+    const Plan plan = solve(agent, oracle);
     if (!plan.feasible) {
-        return Action::infeasible("stranded at " + network_->node(vehicle.at).name +
+        return Action::infeasible("stranded at " + network_->node(agent.at).name +
                                   ": no feasible charging plan reaches the destination");
     }
     return plan.first;
 }
 
-Dollars OptimalPlanner::planCost(const AgentState& vehicle, const WaitOracle& oracle) const {
-    const Plan plan = solve(vehicle, oracle);
+Dollars OptimalPlanner::planCost(const AgentState& agent, const WaitOracle& oracle) const {
+    const Plan plan = solve(agent, oracle);
     return plan.feasible ? plan.cost : kInfiniteCost;
 }
 

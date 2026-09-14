@@ -24,7 +24,7 @@ SimulationConfig staticFrom(const SimulatorConfig& config) {
     return out;
 }
 
-/// Best first: more completed trips beats lower cost, since a stranded vehicle is a
+/// Best first: more completed trips beats lower cost, since a stranded agent is a
 /// worse outcome than an expensive one -- and a mean cost is taken over the trips that
 /// finished, so two runs with different completion counts are averaging over different
 /// populations and their means are not directly comparable anyway.

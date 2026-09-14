@@ -22,7 +22,7 @@ struct Candidate {
     Kwh amount{0.0};     ///< energy to be taken on here
     /// State of charge on departure. Carried explicitly rather than recomputed by
     /// the caller as (soc - travel + charge): that round trip through subtraction
-    /// and re-addition loses the low bits, which was enough to leave a vehicle
+    /// and re-addition loses the low bits, which was enough to leave a agent
     /// needing exactly 70.3 kWh departing with 70.29999999999999 and then failing
     /// a later "can I finish" test by a rounding error.
     Kwh levelAfter{0.0};

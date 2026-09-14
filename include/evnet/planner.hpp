@@ -13,7 +13,7 @@
 
 namespace evnet {
 
-/// What a vehicle should do next.
+/// What a agent should do next.
 struct Action {
     enum class Kind {
         DriveToDestination,  ///< enough charge to finish
@@ -35,18 +35,18 @@ struct Action {
     }
 };
 
-/// Decides a vehicle's next move.
+/// Decides a agent's next move.
 ///
-/// Called afresh every time a vehicle reaches a node, so every planner here is
+/// Called afresh every time a agent reaches a node, so every planner here is
 /// receding-horizon: it commits only to the next step and reconsiders on arrival
-/// with whatever congestion has actually materialised. That is what lets a vehicle
+/// with whatever congestion has actually materialised. That is what lets a agent
 /// change its mind when the station it was heading for turns out to be busier than
 /// estimated.
 class Planner {
 public:
     virtual ~Planner() = default;
     virtual std::string name() const = 0;
-    virtual Action decide(const AgentState& vehicle, const WaitOracle& oracle) const = 0;
+    virtual Action decide(const AgentState& agent, const WaitOracle& oracle) const = 0;
 
     /// How this planner ranks a set of already-enumerated options.
     ///
@@ -68,7 +68,7 @@ public:
                   FeasibilityConfig config = {});
 
     std::string name() const override { return policy_->name(); }
-    Action decide(const AgentState& vehicle, const WaitOracle& oracle) const override;
+    Action decide(const AgentState& agent, const WaitOracle& oracle) const override;
     const Policy& scoringPolicy() const override { return *policy_; }
 
 private:
@@ -109,12 +109,12 @@ public:
                    int chargeLevels = 40);
 
     std::string name() const override { return "optimal"; }
-    Action decide(const AgentState& vehicle, const WaitOracle& oracle) const override;
+    Action decide(const AgentState& agent, const WaitOracle& oracle) const override;
     const Policy& scoringPolicy() const override { return scoring_; }
 
     /// Total generalised cost of the best plan from this state, or infinity if no
     /// plan exists. Exposed for tests and for reporting the optimality gap.
-    Dollars planCost(const AgentState& vehicle, const WaitOracle& oracle) const;
+    Dollars planCost(const AgentState& agent, const WaitOracle& oracle) const;
 
 private:
     struct Plan {
@@ -122,7 +122,7 @@ private:
         Action first;
         bool feasible{false};
     };
-    Plan solve(const AgentState& vehicle, const WaitOracle& oracle) const;
+    Plan solve(const AgentState& agent, const WaitOracle& oracle) const;
 
     const Network* network_;
     const Router* router_;

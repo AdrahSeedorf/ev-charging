@@ -16,7 +16,7 @@ struct FeasibilityConfig {
     double reserveFraction{0.10};  ///< arrive with this fraction of the battery in hand
     /// Average road speed, used to convert distance into elapsed time. Stage 1 had
     /// no clock so this went unused there; the event-driven engine needs it to know
-    /// *when* a vehicle turns up at a candidate station, which is what makes a
+    /// *when* a agent turns up at a candidate station, which is what makes a
     /// time-dependent wait estimate possible.
     double speedKmh{80.0};
     /// Fixed time cost of a charging session, on top of the energy transfer:
@@ -31,7 +31,7 @@ struct FeasibilityConfig {
     Hours stopOverheadHours{0.1};
 };
 
-/// A vehicle's situation at the moment a charging decision is needed.
+/// A agent's situation at the moment a charging decision is needed.
 struct AgentState {
     int id{0};
     NodeId at{kNoNode};
@@ -44,29 +44,29 @@ struct AgentState {
     Km rangeKm() const { return rangeFromEnergy(level, consumption); }
 };
 
-/// Enumerates the charging stops a vehicle may legally take next.
+/// Enumerates the charging stops a agent may legally take next.
 ///
 /// This is the single copy of the feasibility rules, shared by the static
 /// allocator and the discrete-event simulator. Both guards live here:
 ///
-///   1. PROGRESS -- a stop must leave the vehicle strictly closer to its
+///   1. PROGRESS -- a stop must leave the agent strictly closer to its
 ///      destination, else it can oscillate between two cheap stations forever or
 ///      be dragged backwards by an attractive price. Charging in place is exempt,
 ///      since it adds energy without moving; it cannot loop because a second
 ///      attempt at the same node yields no useful energy.
 ///
-///   2. ONWARD FEASIBILITY -- once charged, the vehicle must be able to finish the
+///   2. ONWARD FEASIBILITY -- once charged, the agent must be able to finish the
 ///      trip or reach a further station that is itself closer to the destination.
-///      The legacy corridor allocator omitted this, so it could send a vehicle to
+///      The legacy corridor allocator omitted this, so it could send a agent to
 ///      a low-queue town at the edge of its range and leave it stranded.
 ///
-/// `arrivalTimeAt` lets the caller tell the oracle when the vehicle would reach a
+/// `arrivalTimeAt` lets the caller tell the oracle when the agent would reach a
 /// candidate, which is what allows the event-driven engine to estimate a wait that
 /// depends on the clock. The static engine passes a function returning `now`.
 std::vector<Candidate> buildCandidates(const Network& network,
                                        const Router& router,
                                        const WaitOracle& oracle,
-                                       const AgentState& vehicle,
+                                       const AgentState& agent,
                                        const FeasibilityConfig& config);
 
 /// Candidates for a round-trip top-up mission: drive out to a station, take on
@@ -74,7 +74,7 @@ std::vector<Candidate> buildCandidates(const Network& network,
 std::vector<Candidate> buildTopUpCandidates(const Network& network,
                                             const Router& router,
                                             const WaitOracle& oracle,
-                                            const AgentState& vehicle,
+                                            const AgentState& agent,
                                             Kwh requiredAmount,
                                             const FeasibilityConfig& config);
 
