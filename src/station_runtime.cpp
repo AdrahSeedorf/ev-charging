@@ -10,29 +10,29 @@ StationRuntime::StationRuntime(const Network& network, Hours stopOverheadHours)
     chargerFreeAt_.resize(network.size());
     records_.resize(network.size());
     for (const auto& node : network.nodes()) {
-        if (node.hasStation() && node.station->chargers > 0) {
+        if (node.hasStation() && node.station->servers > 0) {
             chargerFreeAt_[static_cast<std::size_t>(node.id)]
-                .assign(static_cast<std::size_t>(node.station->chargers), 0.0);
+                .assign(static_cast<std::size_t>(node.station->servers), 0.0);
         }
     }
 }
 
 Hours StationRuntime::expectedWait(NodeId node, Hours arrivalTime) const {
-    const auto& chargers = chargerFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
-    if (chargers.empty()) return 0.0;
-    const Hours earliestFree = *std::min_element(chargers.begin(), chargers.end());
+    const auto& servers = chargerFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
+    if (servers.empty()) return 0.0;
+    const Hours earliestFree = *std::min_element(servers.begin(), servers.end());
     return std::max(0.0, earliestFree - arrivalTime);
 }
 
 Hours StationRuntime::chargeTime(NodeId node, Kwh energy) const {
     const Node& n = network_->node(node);
     if (!n.hasStation()) return 0.0;
-    return stopOverhead_ + chargeDuration(energy, n.station->powerKw);
+    return stopOverhead_ + chargeDuration(energy, n.station->ratePerHour);
 }
 
 ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTime, Kwh energy) {
-    auto& chargers = chargerFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
-    if (chargers.empty()) {
+    auto& servers = chargerFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
+    if (servers.empty()) {
         throw std::runtime_error("station runtime: '" + network_->node(node).name +
                                  "' has no chargers to admit to");
     }
@@ -40,7 +40,7 @@ ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTim
     // Earliest-free charger. See the FIFO-equivalence note in the header: because
     // the simulator feeds arrivals in time order, this min-scan yields exactly the
     // waits a single station-wide queue would produce.
-    const auto slot = std::min_element(chargers.begin(), chargers.end());
+    const auto slot = std::min_element(servers.begin(), servers.end());
 
     ServiceRecord record;
     record.vehicleId = vehicleId;
@@ -73,7 +73,7 @@ int StationRuntime::chargingAt(NodeId node, Hours t) const {
 
 double StationRuntime::utilisation(NodeId node, Hours horizon) const {
     const Node& n = network_->node(node);
-    if (horizon <= 0.0 || !n.hasStation() || n.station->chargers <= 0) return 0.0;
+    if (horizon <= 0.0 || !n.hasStation() || n.station->servers <= 0) return 0.0;
 
     Hours busy = 0.0;
     for (const auto& record : records_[static_cast<std::size_t>(node)]) {
@@ -83,7 +83,7 @@ double StationRuntime::utilisation(NodeId node, Hours horizon) const {
         const Hours to = std::min(record.finish, horizon);
         busy += std::max(0.0, to - from);
     }
-    return busy / (horizon * static_cast<double>(n.station->chargers));
+    return busy / (horizon * static_cast<double>(n.station->servers));
 }
 
 std::pair<int, Hours> StationRuntime::peakWaiting(NodeId node) const {
@@ -130,7 +130,7 @@ Hours StationRuntime::lastFinish() const {
 }
 
 void StationRuntime::reset() {
-    for (auto& chargers : chargerFreeAt_) std::fill(chargers.begin(), chargers.end(), 0.0);
+    for (auto& servers : chargerFreeAt_) std::fill(servers.begin(), servers.end(), 0.0);
     for (auto& perNode : records_) perNode.clear();
 }
 

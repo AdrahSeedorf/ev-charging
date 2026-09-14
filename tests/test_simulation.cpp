@@ -166,7 +166,7 @@ TEST_CASE("queues accumulate across a fleet so vehicles affect one another",
     CHECK(state.queueLength(1) == 10);
     CHECK(state.queueLength(2) == 10);
 
-    // Wait scales with queue over chargers: Mid1 has 1 charger, Mid2 has 4.
+    // Wait scales with queue over servers: Mid1 has 1 charger, Mid2 has 4.
     CHECK_THAT(state.expectedWait(1), WithinAbs(0.5 * 10 / 1.0, 1e-9));
     CHECK_THAT(state.expectedWait(2), WithinAbs(0.5 * 10 / 4.0, 1e-9));
 }
@@ -233,7 +233,7 @@ TEST_CASE("demand loading rejects impossible vehicles", "[simulation]") {
 TEST_CASE("a vehicle at a station can charge without moving", "[simulation]") {
     // Regression: reachableWithin deliberately excludes the origin, so the
     // vehicle's own node was never offered as a charging option. A car parked at
-    // a station with free chargers was therefore declared stranded. Two vehicles
+    // a station with free servers was therefore declared stranded. Two vehicles
     // in the shipped Hume fleet hit exactly this, both sitting at Yass.
     Network network = testing::corridor();
     network.setStation(0, Station{0.40, 4, 100.0});  // a charger at the origin

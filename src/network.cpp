@@ -37,10 +37,10 @@ Network Network::load(const std::string& nodesCsvPath, const std::string& edgesC
         }
         if (row.boolean("has_station")) {
             Station station;
-            station.pricePerKwh = row.number("price_per_kwh");
-            station.chargers = row.integer("chargers");
-            station.powerKw = row.number("power_kw");
-            if (station.pricePerKwh < 0.0) {
+            station.pricePerUnit = row.number("price_per_kwh");
+            station.servers = row.integer("chargers");
+            station.ratePerHour = row.number("power_kw");
+            if (station.pricePerUnit < 0.0) {
                 throw std::runtime_error("network: negative price at '" + node.name + "'");
             }
             node.station = station;
@@ -182,10 +182,10 @@ std::vector<std::string> Network::validate() const {
         if (adjacency_[static_cast<std::size_t>(node.id)].empty()) {
             warnings.push_back("'" + node.name + "' has no edges (isolated)");
         }
-        if (node.hasStation() && node.station->chargers <= 0) {
+        if (node.hasStation() && node.station->servers <= 0) {
             warnings.push_back("'" + node.name + "' has a station with no chargers");
         }
-        if (node.hasStation() && node.station->powerKw <= 0.0) {
+        if (node.hasStation() && node.station->ratePerHour <= 0.0) {
             warnings.push_back("'" + node.name + "' has a station with no charging power");
         }
     }

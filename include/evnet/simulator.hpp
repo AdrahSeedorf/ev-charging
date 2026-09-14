@@ -133,7 +133,7 @@ struct TimeSeriesSample {
     std::string station;
     int waiting{0};
     int charging{0};
-    int chargers{0};
+    int servers{0};
 };
 
 /// Samples every station at a fixed interval across [0, horizon]. This is the

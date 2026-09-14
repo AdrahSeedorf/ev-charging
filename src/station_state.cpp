@@ -10,10 +10,10 @@ StationState::StationState(const Network& network)
 
 Hours StationState::expectedWait(NodeId id) const {
     const Node& node = network_->node(id);
-    if (!node.hasStation() || node.station->chargers <= 0) return 0.0;
+    if (!node.hasStation() || node.station->servers <= 0) return 0.0;
     const int queued = queue_[static_cast<std::size_t>(id)];
     return kHoursPerQueuedVehicle * static_cast<double>(queued) /
-           static_cast<double>(node.station->chargers);
+           static_cast<double>(node.station->servers);
 }
 
 Hours StationState::expectedWait(NodeId id, Hours /*arrivalTime*/) const {
@@ -23,7 +23,7 @@ Hours StationState::expectedWait(NodeId id, Hours /*arrivalTime*/) const {
 Hours StationState::chargeTime(NodeId id, Kwh energy) const {
     const Node& node = network_->node(id);
     if (!node.hasStation()) return 0.0;
-    return chargeDuration(energy, node.station->powerKw);
+    return chargeDuration(energy, node.station->ratePerHour);
 }
 
 int StationState::queueLength(NodeId id) const {

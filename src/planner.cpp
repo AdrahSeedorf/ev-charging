@@ -183,7 +183,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
         // remove. So the rule is that the exemption must be earned where it can be: at a
         // charger, by charging.
         const Node& here = network_->node(static_cast<NodeId>(node));
-        const bool couldChargeHere = here.hasStation() && here.station->chargers > 0;
+        const bool couldChargeHere = here.hasStation() && here.station->servers > 0;
         const bool mustChargeFirst = level < reserveLevel && couldChargeHere;
 
         for (const auto& edge : network_->neighbours(static_cast<NodeId>(node))) {
@@ -193,7 +193,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
             if (burnLevels > level) continue;
             const std::size_t remaining = level - burnLevels;
 
-            // The reserve exists so a vehicle is never stranded between chargers, so
+            // The reserve exists so a vehicle is never stranded between servers, so
             // it is required on arrival at a plain waypoint but not at a station --
             // rolling into a charger nearly empty is the entire point of the charger.
             //
@@ -214,8 +214,8 @@ OptimalPlanner::Plan OptimalPlanner::solve(const VehicleState& vehicle,
             for (std::size_t target = level + 1; target < levelCount; ++target) {
                 const Kwh energy = static_cast<double>(target - level) * step;
                 const Hours duration =
-                    config_.stopOverheadHours + chargeDuration(energy, here.station->powerKw);
-                const Dollars added = energy * here.station->pricePerKwh +
+                    config_.stopOverheadHours + chargeDuration(energy, here.station->ratePerHour);
+                const Dollars added = energy * here.station->pricePerUnit +
                                       (waitAt[node] + duration) * valueOfTime_;
                 relax(index(node, target), added, Move::Charge);
             }

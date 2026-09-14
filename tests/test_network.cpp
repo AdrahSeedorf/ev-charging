@@ -53,11 +53,11 @@ TEST_CASE("loading accepts comments, blank lines and surrounding whitespace", "[
     REQUIRE(network.size() == 3);
     CHECK(network.node(0).name == "Alpha");
     CHECK(network.node(0).hasStation());
-    CHECK(network.node(0).station->chargers == 4);
+    CHECK(network.node(0).station->servers == 4);
     CHECK_FALSE(network.node(1).hasStation());
     // A price of zero means free, which is distinct from having no station.
     CHECK(network.node(2).hasStation());
-    CHECK(network.node(2).station->pricePerKwh == 0.0);
+    CHECK(network.node(2).station->pricePerUnit == 0.0);
 }
 
 TEST_CASE("stations and candidate sites partition the network", "[network]") {

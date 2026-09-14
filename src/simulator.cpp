@@ -163,7 +163,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                     runtime.admit(runner.at, demand.id, event.time, action.energyKwh);
 
                 runner.soc = std::min(demand.batteryKwh, runner.soc + action.energyKwh);
-                const Dollars cost = action.energyKwh * node.station->pricePerKwh;
+                const Dollars cost = action.energyKwh * node.station->pricePerUnit;
                 runner.trip.stops.push_back(Stop{runner.at, action.energyKwh, cost, record.wait(),
                                                  record.service()});
                 runner.trip.energyCost += cost;
@@ -262,7 +262,7 @@ std::vector<TimeSeriesSample> sampleTimeSeries(const Network& network,
             sample.station = network.node(id).name;
             sample.waiting = runtime.waitingAt(id, t);
             sample.charging = runtime.chargingAt(id, t);
-            sample.chargers = network.node(id).station->chargers;
+            sample.servers = network.node(id).station->servers;
             samples.push_back(sample);
         }
     }

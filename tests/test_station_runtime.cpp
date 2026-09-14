@@ -9,13 +9,13 @@ using Catch::Matchers::WithinAbs;
 
 namespace {
 
-/// One station, `chargers` chargers, 100 kW, no session overhead so the arithmetic
+/// One station, `servers` servers, 100 kW, no session overhead so the arithmetic
 /// in these tests stays legible.
-Network singleStation(int chargers) {
+Network singleStation(int servers) {
     Network network;
     Node node;
     node.name = "Hub";
-    node.station = Station{0.50, chargers, 100.0};
+    node.station = Station{0.50, servers, 100.0};
     network.addNode(node);
     return network;
 }
@@ -34,7 +34,7 @@ TEST_CASE("chargers are used in parallel before anyone queues", "[runtime]") {
     const Network network = singleStation(2);
     StationRuntime runtime(network, 0.0);
 
-    // Two vehicles, two chargers: neither waits.
+    // Two vehicles, two servers: neither waits.
     const auto first = runtime.admit(0, 1, 0.0, 100.0);   // 1.0h of charging
     const auto second = runtime.admit(0, 2, 0.0, 100.0);
     CHECK_THAT(first.wait(), WithinAbs(0.0, 1e-12));
@@ -81,7 +81,7 @@ TEST_CASE("earliest-free assignment reproduces station-wide FIFO", "[runtime]") 
         CHECK(served[i].start >= served[i - 1].start);
         CHECK(served[i].arrival >= served[i - 1].arrival);
     }
-    // Three chargers, so the first three go straight on.
+    // Three servers, so the first three go straight on.
     for (int i = 0; i < 3; ++i) CHECK_THAT(served[static_cast<std::size_t>(i)].wait(), WithinAbs(0.0, 1e-12));
     CHECK(served[3].wait() > 0.0);
 }

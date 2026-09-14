@@ -17,9 +17,9 @@ inline constexpr NodeId kNoNode = -1;
 /// A charging facility at a node. Absent (std::nullopt on Node) means the node
 /// is a plain waypoint -- and therefore a candidate site for a new station.
 struct Station {
-    Dollars pricePerKwh{0.0};
-    int chargers{0};
-    Kw powerKw{50.0};
+    Dollars pricePerUnit{0.0};
+    int servers{0};
+    Kw ratePerHour{50.0};
 };
 
 struct Node {
@@ -81,7 +81,7 @@ public:
     void setStation(NodeId id, Station station);
 
     /// Structural warnings a human should see: self-loops, isolated nodes,
-    /// disconnection, stations with zero chargers, and -- where coordinates are
+    /// disconnection, stations with zero servers, and -- where coordinates are
     /// present -- edges whose distance is geometrically impossible. Returns an empty
     /// vector for a clean network.
     std::vector<std::string> validate() const;

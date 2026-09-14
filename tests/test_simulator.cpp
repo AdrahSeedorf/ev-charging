@@ -324,7 +324,7 @@ TEST_CASE("the time series samples every station across the window", "[simulator
     REQUIRE_FALSE(samples.empty());
     CHECK(samples.size() % stations == 0);
     for (const auto& sample : samples) {
-        CHECK(sample.charging <= sample.chargers);
+        CHECK(sample.charging <= sample.servers);
         CHECK(sample.waiting >= 0);
         CHECK(sample.time <= summary.makespan + 1e-9);
     }
@@ -333,7 +333,7 @@ TEST_CASE("the time series samples every station across the window", "[simulator
 }
 
 TEST_CASE("the optimal planner may arrive at a charger below its reserve", "[planner]") {
-    // The reserve exists to stop a vehicle being stranded BETWEEN chargers, so it must
+    // The reserve exists to stop a vehicle being stranded BETWEEN servers, so it must
     // not be demanded on arrival AT one -- rolling in nearly empty is what the charger
     // is for. Enforcing it everywhere made this planner reject journeys the greedy
     // planners completed, which meant the two were being compared on different

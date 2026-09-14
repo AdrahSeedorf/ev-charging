@@ -36,7 +36,7 @@ struct ServiceRecord {
 /// processes arrivals in nondecreasing time order, this is provably equivalent to
 /// a single station-wide FIFO queue: an earlier arrival is always assigned first
 /// and therefore always takes the earliest slot. So exact waits fall out of a
-/// min-scan over `chargers`, and the simulator needs no StartCharge or
+/// min-scan over `servers`, and the simulator needs no StartCharge or
 /// FinishCharge events at all -- one event type suffices.
 class StationRuntime : public WaitOracle {
 public:

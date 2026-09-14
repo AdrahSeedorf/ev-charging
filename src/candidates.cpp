@@ -70,7 +70,7 @@ std::vector<Candidate> buildCandidates(const Network& network,
         candidate.energyKwh = energy;
         candidate.socAfterCharge = target;
         candidate.travelCost = detour * config.travelCostPerKm;
-        candidate.energyCost = energy * node.station->pricePerKwh;
+        candidate.energyCost = energy * node.station->pricePerUnit;
         // The wait is estimated for when the vehicle would actually ARRIVE, not
         // for the moment the decision is taken. With a timeless oracle this makes
         // no difference; with a clock it is the difference between a useful
@@ -124,7 +124,7 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
         candidate.energyKwh = delivered;
         candidate.socAfterCharge = afterCharging;
         candidate.travelCost = 2.0 * distance * config.travelCostPerKm;  // round trip
-        candidate.energyCost = delivered * node.station->pricePerKwh;
+        candidate.energyCost = delivered * node.station->pricePerUnit;
         const Hours arrivalTime = vehicle.now + drivingTime(distance, config.speedKmh);
         candidate.waitHours = oracle.expectedWait(candidateNode, arrivalTime);
         candidate.chargeHours = oracle.chargeTime(candidateNode, delivered);

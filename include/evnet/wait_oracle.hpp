@@ -13,7 +13,7 @@ namespace evnet {
 /// the congestion question completely differently:
 ///
 ///   * StationState (stage 1) is timeless. It counts arrivals and divides by
-///     chargers, so `arrivalTime` is ignored entirely. Kept because it reproduces
+///     servers, so `arrivalTime` is ignored entirely. Kept because it reproduces
 ///     the legacy corridor project's semantics, which is what makes comparing
 ///     against that project meaningful.
 ///
