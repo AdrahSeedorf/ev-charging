@@ -103,15 +103,15 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
 
             const Hours outboundTime = drivingTime(chosen->detourKm, config_.speedKmh);
             const ServiceRecord record = runtime.admit(chosen->node, demand.id,
-                                                       event.time + outboundTime, chosen->energyKwh);
+                                                       event.time + outboundTime, chosen->amount);
 
-            runner.trip.stops.push_back(Stop{chosen->node, chosen->energyKwh, chosen->energyCost,
+            runner.trip.stops.push_back(Stop{chosen->node, chosen->amount, chosen->energyCost,
                                              record.wait(), record.service()});
             runner.trip.distanceKm = 2.0 * chosen->detourKm;
             runner.trip.travelCost = chosen->travelCost;
             runner.trip.energyCost = chosen->energyCost;
             runner.trip.waitHours = record.wait();
-            runner.trip.chargeHours = record.service();
+            runner.trip.serviceHours = record.service();
             runner.trip.drivingHours = 2.0 * outboundTime;
             runner.trip.finishTime = record.finish + outboundTime;  // and home again
             runner.trip.completed = true;
@@ -152,7 +152,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                 break;
             }
 
-            case Action::Kind::ChargeHere: {
+            case Action::Kind::ServiceHere: {
                 const Node& node = network_->node(runner.at);
                 if (!node.hasStation()) {
                     runner.done = true;
@@ -160,15 +160,15 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                     break;
                 }
                 const ServiceRecord record =
-                    runtime.admit(runner.at, demand.id, event.time, action.energyKwh);
+                    runtime.admit(runner.at, demand.id, event.time, action.amount);
 
-                runner.soc = std::min(demand.capacity, runner.soc + action.energyKwh);
-                const Dollars cost = action.energyKwh * node.station->pricePerUnit;
-                runner.trip.stops.push_back(Stop{runner.at, action.energyKwh, cost, record.wait(),
+                runner.soc = std::min(demand.capacity, runner.soc + action.amount);
+                const Dollars cost = action.amount * node.station->pricePerUnit;
+                runner.trip.stops.push_back(Stop{runner.at, action.amount, cost, record.wait(),
                                                  record.service()});
                 runner.trip.energyCost += cost;
                 runner.trip.waitHours += record.wait();
-                runner.trip.chargeHours += record.service();
+                runner.trip.serviceHours += record.service();
                 // The vehicle is occupied until it unplugs.
                 schedule.push(Event{record.finish, event.index});
                 break;

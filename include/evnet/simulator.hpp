@@ -23,14 +23,14 @@ struct TimedTrip {
     Dollars travelCost{0.0};
     Dollars energyCost{0.0};
     Hours waitHours{0.0};    ///< measured queueing, summed over stops
-    Hours chargeHours{0.0};  ///< measured time plugged in
+    Hours serviceHours{0.0};  ///< measured time plugged in
     Hours drivingHours{0.0};
 
     Dollars moneyCost() const { return travelCost + energyCost; }
     /// Time spent at stations.
-    Hours timeHours() const { return waitHours + chargeHours; }
+    Hours timeHours() const { return waitHours + serviceHours; }
     /// All time the journey consumed, driving included.
-    Hours totalTimeHours() const { return waitHours + chargeHours + drivingHours; }
+    Hours totalTimeHours() const { return waitHours + serviceHours + drivingHours; }
     /// Wall-clock door to door.
     Hours elapsed() const { return finishTime - releaseTime; }
     /// Money plus every hour the trip cost, valued at a rate.

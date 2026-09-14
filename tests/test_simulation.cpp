@@ -14,7 +14,7 @@ namespace {
 
 Kwh totalCharged(const TripResult& result) {
     return std::accumulate(result.stops.begin(), result.stops.end(), 0.0,
-                           [](Kwh sum, const Stop& stop) { return sum + stop.energyKwh; });
+                           [](Kwh sum, const Stop& stop) { return sum + stop.amount; });
 }
 
 }  // namespace
@@ -195,7 +195,7 @@ TEST_CASE("a top-up mission is a round trip to a single station", "[simulation]"
     // Mid1 at $0.30 is cheaper than Mid2 at $0.60 and both are in range.
     CHECK(network.node(result.stops[0].node).name == "Mid1");
     CHECK_THAT(result.distanceKm, WithinAbs(200.0, 1e-9));  // 100 km out and back
-    CHECK_THAT(result.stops[0].energyKwh, WithinAbs(15.0, 1e-6));
+    CHECK_THAT(result.stops[0].amount, WithinAbs(15.0, 1e-6));
 }
 
 TEST_CASE("summaries report the tail, not just the mean", "[simulation]") {

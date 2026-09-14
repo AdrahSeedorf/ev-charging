@@ -128,14 +128,14 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
         // Drive to the chosen station, then charge. The resulting state of charge
         // is taken from the candidate rather than recomputed here, so it is exact.
         result.distanceKm += chosen->detourKm;
-        soc = std::min(demand.capacity, chosen->socAfterCharge);
+        soc = std::min(demand.capacity, chosen->levelAfter);
 
         state.enqueue(chosen->node);
-        result.stops.push_back(Stop{chosen->node, chosen->energyKwh, chosen->energyCost,
-                                   chosen->waitHours, chosen->chargeHours});
+        result.stops.push_back(Stop{chosen->node, chosen->amount, chosen->energyCost,
+                                   chosen->waitHours, chosen->serviceHours});
         result.energyCost += chosen->energyCost;
         result.waitHours += chosen->waitHours;
-        result.chargeHours += chosen->chargeHours;
+        result.serviceHours += chosen->serviceHours;
         at = chosen->node;
     }
 
@@ -183,13 +183,13 @@ TripResult Allocator::runTopUp(const Demand& demand, const Policy& policy, Stati
     }
 
     state.enqueue(chosen->node);
-    result.stops.push_back(Stop{chosen->node, chosen->energyKwh, chosen->energyCost,
-                               chosen->waitHours, chosen->chargeHours});
+    result.stops.push_back(Stop{chosen->node, chosen->amount, chosen->energyCost,
+                               chosen->waitHours, chosen->serviceHours});
     result.distanceKm = 2.0 * chosen->detourKm;
     result.travelCost = chosen->travelCost;
     result.energyCost = chosen->energyCost;
     result.waitHours = chosen->waitHours;
-    result.chargeHours = chosen->chargeHours;
+    result.serviceHours = chosen->serviceHours;
     result.completed = true;
     return result;
 }

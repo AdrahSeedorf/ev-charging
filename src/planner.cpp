@@ -59,7 +59,7 @@ Action GreedyPlanner::decide(const AgentState& vehicle, const WaitOracle& oracle
     const Candidate* chosen = policy_->choose(candidates);
     if (chosen == nullptr) return Action::infeasible("policy returned no choice");
 
-    if (chosen->node == vehicle.at) return Action::chargeHere(chosen->energyKwh);
+    if (chosen->node == vehicle.at) return Action::serviceHere(chosen->amount);
     return Action::driveTo(chosen->node);
 }
 
@@ -284,7 +284,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& vehicle,
         Kwh energy = bulkBuying ? gridEnergy : exactEnergy;
         if (energy <= kEnergyEpsilon) energy = gridEnergy;
 
-        plan.first = Action::chargeHere(energy);
+        plan.first = Action::serviceHere(energy);
         return plan;
     }
 

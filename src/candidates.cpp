@@ -67,8 +67,8 @@ std::vector<Candidate> buildCandidates(const Network& network,
         candidate.node = candidateNode;
         candidate.detourKm = detour;
         candidate.progressKm = distanceToDestination - remainingAfter;
-        candidate.energyKwh = energy;
-        candidate.socAfterCharge = target;
+        candidate.amount = energy;
+        candidate.levelAfter = target;
         candidate.travelCost = detour * config.travelCostPerKm;
         candidate.energyCost = energy * node.station->pricePerUnit;
         // The wait is estimated for when the vehicle would actually ARRIVE, not
@@ -77,7 +77,7 @@ std::vector<Candidate> buildCandidates(const Network& network,
         // estimate and a stale one.
         const Hours arrivalTime = vehicle.now + drivingTime(detour, config.speedKmh);
         candidate.waitHours = oracle.expectedWait(candidateNode, arrivalTime);
-        candidate.chargeHours = oracle.chargeTime(candidateNode, energy);
+        candidate.serviceHours = oracle.chargeTime(candidateNode, energy);
         candidates.push_back(candidate);
     }
 
@@ -121,13 +121,13 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
         // "nearest station", which is exactly the naive baseline the legacy Sydney
         // project used for this question.
         candidate.progressKm = -distance;
-        candidate.energyKwh = delivered;
-        candidate.socAfterCharge = afterCharging;
+        candidate.amount = delivered;
+        candidate.levelAfter = afterCharging;
         candidate.travelCost = 2.0 * distance * config.travelCostPerKm;  // round trip
         candidate.energyCost = delivered * node.station->pricePerUnit;
         const Hours arrivalTime = vehicle.now + drivingTime(distance, config.speedKmh);
         candidate.waitHours = oracle.expectedWait(candidateNode, arrivalTime);
-        candidate.chargeHours = oracle.chargeTime(candidateNode, delivered);
+        candidate.serviceHours = oracle.chargeTime(candidateNode, delivered);
         candidates.push_back(candidate);
     }
 

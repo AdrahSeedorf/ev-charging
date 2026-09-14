@@ -327,9 +327,9 @@ int cmdRouteEvents(const Options& options) {
         for (std::size_t i = 0; i < trip.stops.size(); ++i) {
             const auto& stop = trip.stops[i];
             std::cout << "  " << (i + 1) << ". " << network.node(stop.node).name << " -- take "
-                      << std::fixed << std::setprecision(1) << stop.energyKwh << " kWh for "
+                      << std::fixed << std::setprecision(1) << stop.amount << " kWh for "
                       << money(stop.energyCost) << ", wait " << hoursText(stop.waitHours)
-                      << ", charge " << hoursText(stop.chargeHours) << "\n";
+                      << ", charge " << hoursText(stop.serviceHours) << "\n";
         }
     }
     std::cout << "  distance " << std::setprecision(1) << trip.distanceKm << " km"
@@ -387,9 +387,9 @@ int cmdRouteStatic(const Options& options) {
         for (std::size_t i = 0; i < result.stops.size(); ++i) {
             const auto& stop = result.stops[i];
             std::cout << "  " << (i + 1) << ". " << network.node(stop.node).name << " -- take "
-                      << std::fixed << std::setprecision(1) << stop.energyKwh << " kWh for "
+                      << std::fixed << std::setprecision(1) << stop.amount << " kWh for "
                       << money(stop.energyCost) << ", wait " << hoursText(stop.waitHours) << ", charge "
-                      << hoursText(stop.chargeHours) << "\n";
+                      << hoursText(stop.serviceHours) << "\n";
         }
     }
     std::cout << "  distance " << std::setprecision(1) << result.distanceKm << " km"
@@ -504,7 +504,7 @@ void writeTrips(const std::string& path,
             << trip.elapsed() << "," << std::setprecision(1) << trip.distanceKm << ","
             << trip.stops.size() << "," << std::setprecision(2) << trip.travelCost << ","
             << trip.energyCost << "," << std::setprecision(3) << trip.waitHours << ","
-            << trip.chargeHours << "," << trip.drivingHours << "," << std::setprecision(2)
+            << trip.serviceHours << "," << trip.drivingHours << "," << std::setprecision(2)
             << trip.generalisedCost(valueOfTime) << "," << csv::escape(names) << ","
             << csv::escape(trip.failure) << "\n";
     }

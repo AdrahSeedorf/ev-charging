@@ -16,7 +16,7 @@ struct ServiceRecord {
     Hours arrival{0.0};  ///< reached the station
     Hours start{0.0};    ///< plugged in
     Hours finish{0.0};   ///< unplugged
-    Kwh energyKwh{0.0};
+    Kwh amount{0.0};
 
     Hours wait() const { return start - arrival; }
     Hours service() const { return finish - start; }

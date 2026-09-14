@@ -48,7 +48,7 @@ ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTim
     record.arrival = arrivalTime;
     record.start = std::max(arrivalTime, *slot);
     record.finish = record.start + chargeTime(node, energy);
-    record.energyKwh = energy;
+    record.amount = energy;
 
     *slot = record.finish;
     records_[static_cast<std::size_t>(node)].push_back(record);

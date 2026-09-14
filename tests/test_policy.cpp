@@ -15,29 +15,29 @@ std::vector<Candidate> divergentOptions() {
     Candidate cheap;  // cheapest energy, but a long queue and little progress
     cheap.node = 1;
     cheap.progressKm = 10.0;
-    cheap.energyKwh = 20.0;
+    cheap.amount = 20.0;
     cheap.travelCost = 1.0;
     cheap.energyCost = 4.0;
     cheap.waitHours = 3.0;
-    cheap.chargeHours = 0.5;
+    cheap.serviceHours = 0.5;
 
     Candidate quiet;  // no queue at all, but dear
     quiet.node = 2;
     quiet.progressKm = 30.0;
-    quiet.energyKwh = 20.0;
+    quiet.amount = 20.0;
     quiet.travelCost = 3.0;
     quiet.energyCost = 14.0;
     quiet.waitHours = 0.0;
-    quiet.chargeHours = 0.5;
+    quiet.serviceHours = 0.5;
 
     Candidate distant;  // furthest along the route, middling on both other axes
     distant.node = 3;
     distant.progressKm = 60.0;
-    distant.energyKwh = 20.0;
+    distant.amount = 20.0;
     distant.travelCost = 5.0;
     distant.energyCost = 9.0;
     distant.waitHours = 1.0;
-    distant.chargeHours = 0.5;
+    distant.serviceHours = 0.5;
 
     return {cheap, quiet, distant};
 }
@@ -49,7 +49,7 @@ TEST_CASE("generalised cost combines money and time", "[policy]") {
     candidate.travelCost = 2.0;
     candidate.energyCost = 8.0;
     candidate.waitHours = 1.5;
-    candidate.chargeHours = 0.5;
+    candidate.serviceHours = 0.5;
 
     CHECK_THAT(candidate.moneyCost(), WithinAbs(10.0, 1e-9));
     CHECK_THAT(candidate.timeHours(), WithinAbs(2.0, 1e-9));

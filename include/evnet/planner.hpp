@@ -18,18 +18,18 @@ struct Action {
     enum class Kind {
         DriveToDestination,  ///< enough charge to finish
         DriveToStation,      ///< head for `target`, decide again on arrival
-        ChargeHere,          ///< take on `energyKwh` at the current node
+        ServiceHere,          ///< take on `amount` at the current node
         Infeasible           ///< nothing legal remains; `reason` says why
     };
 
     Kind kind{Kind::Infeasible};
     NodeId target{kNoNode};
-    Kwh energyKwh{0.0};
+    Kwh amount{0.0};
     std::string reason;
 
     static Action driveToDestination() { return {Kind::DriveToDestination, kNoNode, 0.0, {}}; }
     static Action driveTo(NodeId node) { return {Kind::DriveToStation, node, 0.0, {}}; }
-    static Action chargeHere(Kwh energy) { return {Kind::ChargeHere, kNoNode, energy, {}}; }
+    static Action serviceHere(Kwh energy) { return {Kind::ServiceHere, kNoNode, energy, {}}; }
     static Action infeasible(std::string why) {
         return {Kind::Infeasible, kNoNode, 0.0, std::move(why)};
     }

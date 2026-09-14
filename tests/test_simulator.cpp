@@ -73,7 +73,7 @@ TEST_CASE("a lone vehicle never queues", "[simulator]") {
     StationRuntime runtime(network, 0.0);
     const auto trips = simulator.run({testing::corridorJourney()}, *planner, runtime);
     CHECK_THAT(trips[0].waitHours, WithinAbs(0.0, 1e-9));
-    CHECK(trips[0].chargeHours > 0.0);
+    CHECK(trips[0].serviceHours > 0.0);
 }
 
 TEST_CASE("simultaneous departures queue, staggered ones do not", "[simulator]") {
@@ -121,7 +121,7 @@ TEST_CASE("energy balances across an event-driven trip", "[simulator]") {
 
     const Kwh charged = std::accumulate(
         trips[0].stops.begin(), trips[0].stops.end(), 0.0,
-        [](Kwh sum, const Stop& s) { return sum + s.energyKwh; });
+        [](Kwh sum, const Stop& s) { return sum + s.amount; });
     const Kwh consumed = energyForDistance(trips[0].distanceKm, demand.consumption);
     CHECK(demand.level + charged + 1e-6 >= consumed);
 }

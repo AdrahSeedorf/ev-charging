@@ -44,10 +44,10 @@ struct Demand {
 
 struct Stop {
     NodeId node{kNoNode};
-    Kwh energyKwh{0.0};
+    Kwh amount{0.0};
     Dollars energyCost{0.0};
     Hours waitHours{0.0};
-    Hours chargeHours{0.0};
+    Hours serviceHours{0.0};
 };
 
 struct TripResult {
@@ -59,10 +59,10 @@ struct TripResult {
     Dollars travelCost{0.0};
     Dollars energyCost{0.0};
     Hours waitHours{0.0};
-    Hours chargeHours{0.0};
+    Hours serviceHours{0.0};
 
     Dollars moneyCost() const { return travelCost + energyCost; }
-    Hours timeHours() const { return waitHours + chargeHours; }
+    Hours timeHours() const { return waitHours + serviceHours; }
     Dollars generalisedCost(Dollars valueOfTime) const {
         return moneyCost() + timeHours() * valueOfTime;
     }

@@ -19,20 +19,20 @@ struct Candidate {
     NodeId node{kNoNode};
     Km detourKm{0.0};       ///< distance from current position to this station
     Km progressKm{0.0};     ///< reduction in remaining distance to destination
-    Kwh energyKwh{0.0};     ///< energy to be taken on here
+    Kwh amount{0.0};     ///< energy to be taken on here
     /// State of charge on departure. Carried explicitly rather than recomputed by
     /// the caller as (soc - travel + charge): that round trip through subtraction
     /// and re-addition loses the low bits, which was enough to leave a vehicle
     /// needing exactly 70.3 kWh departing with 70.29999999999999 and then failing
     /// a later "can I finish" test by a rounding error.
-    Kwh socAfterCharge{0.0};
+    Kwh levelAfter{0.0};
     Dollars travelCost{0.0};
     Dollars energyCost{0.0};
     Hours waitHours{0.0};
-    Hours chargeHours{0.0};
+    Hours serviceHours{0.0};
 
     Dollars moneyCost() const { return travelCost + energyCost; }
-    Hours timeHours() const { return waitHours + chargeHours; }
+    Hours timeHours() const { return waitHours + serviceHours; }
 
     /// Money and time on one axis. This is the objective neither legacy project
     /// could express: the Sydney study optimised `moneyCost` alone, the corridor
