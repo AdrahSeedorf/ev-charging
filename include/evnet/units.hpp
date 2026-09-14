@@ -1,6 +1,13 @@
 #pragma once
 
-// Unit vocabulary for the whole toolkit.
+#include "evnet/quantities.hpp"
+
+// The electric-vehicle reading of the quantities in `quantities.hpp`, and the
+// physics that relates them.
+//
+// This file is the bottom half of the seam. Everything here knows that the
+// agent is a car and that the resource it carries is electrical energy; nothing
+// above the seam should need to include it.
 //
 // The two projects this toolkit was merged from used incompatible unit systems:
 // the Sydney metro study worked in kWh and dollars and never modelled time; the
@@ -15,15 +22,11 @@
 
 namespace evnet {
 
-// Semantic aliases. These are documentation, not type safety -- a strongly
-// typed units library would catch mixing them up, but it would also make the
-// arithmetic in the router considerably noisier for little gain at this scale.
-using Km = double;
-using Kwh = double;
-using Kw = double;
-using Hours = double;
-using Dollars = double;
-using KwhPer100Km = double;
+// EV spellings of the neutral quantities. Same underlying type; these names say
+// which domain is being talked about.
+using Kwh = Resource;
+using Kw = Rate;
+using KwhPer100Km = PerDistance;
 
 /// Distance a vehicle can travel on `energy`, given its consumption rate.
 inline Km rangeFromEnergy(Kwh energy, KwhPer100Km efficiency) {
