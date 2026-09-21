@@ -29,6 +29,10 @@ struct TimedTrip {
     /// battery at journey's end; for a driver, legal hours still in hand. Not
     /// meaningful for a trip that did not complete.
     Resource levelAtFinish{0.0};
+    /// Times this agent reached the station it was heading for and was refused
+    /// because it was full. Always zero where stations queue; for truck parking it
+    /// is the statistic the shortage is measured in.
+    int turnedAway{0};
 
     Dollars moneyCost() const { return travelCost + energyCost; }
     /// Time spent at stations.

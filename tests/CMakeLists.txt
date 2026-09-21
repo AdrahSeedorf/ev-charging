@@ -10,6 +10,7 @@ FetchContent_Declare(Catch2
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(evnet_tests
+        test_admission.cpp
         test_datasets.cpp
         test_domain.cpp
         test_network.cpp

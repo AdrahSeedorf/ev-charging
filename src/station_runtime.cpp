@@ -21,7 +21,11 @@ Hours StationRuntime::expectedWait(NodeId node, Hours arrivalTime) const {
     const auto& servers = serverFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
     if (servers.empty()) return 0.0;
     const Hours earliestFree = *std::min_element(servers.begin(), servers.end());
-    return std::max(0.0, earliestFree - arrivalTime);
+    const Hours wait = std::max(0.0, earliestFree - arrivalTime);
+    // Any wait at all means every server is busy on arrival. Where stations have
+    // nowhere to wait, that is a refusal, not a delay.
+    if (wait > 0.0 && network_->domain().admission() == Admission::TurnAway) return kNoAdmission;
+    return wait;
 }
 
 Hours StationRuntime::serviceTime(NodeId node, Resource amount) const {
@@ -41,6 +45,15 @@ ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTim
     // the simulator feeds arrivals in time order, this min-scan yields exactly the
     // waits a single station-wide queue would produce.
     const auto slot = std::min_element(servers.begin(), servers.end());
+
+    // A station that turns arrivals away never reaches here full: planners are
+    // only offered stations with a finite expected wait, and the simulator asks
+    // again on arrival. Getting here anyway is a bug upstream, and admitting the
+    // agent would quietly invent the waiting room the domain says does not exist.
+    if (*slot > arrivalTime && network_->domain().admission() == Admission::TurnAway) {
+        throw std::logic_error("station runtime: '" + network_->node(node).name +
+                               "' is full and does not queue, but an agent was admitted");
+    }
 
     ServiceRecord record;
     record.vehicleId = vehicleId;

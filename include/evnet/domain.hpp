@@ -13,12 +13,29 @@
 // agent, and how long a station takes to serve it -- and never answer those
 // questions themselves.
 //
-// Three methods, because an audit of the engine found exactly three physics
-// questions being asked above the seam. If a second domain needs a fourth, that
-// is a finding about the model, and it belongs here rather than in an `if`
-// somewhere in the planner.
+// It began as three methods, because an audit of the engine found exactly three
+// physics questions being asked above the seam, with the rule that anything a
+// second domain needed beyond them was a finding about the model and belonged
+// here rather than in an `if` somewhere in the planner.
+//
+// Trucking produced the first such finding: admission(). The EV model assumed,
+// without ever saying so, that a full station has somewhere to wait. Truck
+// parking does not, and that difference -- not how fast a clock drains -- is
+// what makes a parking shortage cost drivers their legal hours.
 
 namespace evnet {
+
+/// What a station does with an arrival when every server is busy.
+///
+/// This is a property of the domain rather than of individual stations because
+/// it describes what the facility physically is. An EV charging site has a car
+/// park: you wait for the next charger. A truck stop's parking IS the server --
+/// when every bay is taken there is nowhere to wait, and the driver has to go
+/// and look somewhere else.
+enum class Admission {
+    Queue,     ///< wait for the next free server
+    TurnAway,  ///< no waiting room: a full station refuses the arrival
+};
 
 class Domain {
 public:
@@ -40,6 +57,9 @@ public:
     /// Excludes queueing and any fixed per-stop overhead, which the engines
     /// account for separately.
     virtual Hours serviceDuration(Resource amount, Rate rate) const = 0;
+
+    /// What a full station does with an arrival. See Admission.
+    virtual Admission admission() const = 0;
 };
 
 /// Charge in kWh, spent at a consumption in kWh/100km, delivered at a charger
@@ -51,6 +71,8 @@ public:
     Resource resourceForDistance(Km distance, PerDistance consumption) const override;
     Km distanceOnResource(Resource amount, PerDistance consumption) const override;
     Hours serviceDuration(Resource amount, Rate rate) const override;
+    /// You wait for a charger.
+    Admission admission() const override { return Admission::Queue; }
 };
 
 /// A shared, immutable EV domain. Domains are stateless, so one instance serves

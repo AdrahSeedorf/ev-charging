@@ -183,8 +183,14 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
         // planners will happily attempt -- the same asymmetry the waiver was added to
         // remove. So the rule is that the exemption must be earned where it can be: at a
         // charger, by charging.
+        //
+        // "Available" includes being let in. A full station that turns arrivals
+        // away offers nothing to charge at, so an agent below its reserve there
+        // must be allowed to drive on and look elsewhere -- otherwise the waiver
+        // would strand exactly the driver a parking shortage is turning away.
         const Node& here = network_->node(static_cast<NodeId>(node));
-        const bool couldChargeHere = here.hasStation() && here.station->servers > 0;
+        const bool couldChargeHere =
+            here.hasStation() && here.station->servers > 0 && waitAt[node] != kNoAdmission;
         const bool mustChargeFirst = level < reserveLevel && couldChargeHere;
 
         for (const auto& edge : network_->neighbours(static_cast<NodeId>(node))) {

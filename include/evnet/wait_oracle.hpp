@@ -1,9 +1,19 @@
 #pragma once
 
+#include <limits>
+
 #include "evnet/network.hpp"
 #include "evnet/quantities.hpp"
 
 namespace evnet {
+
+/// The expected wait an oracle reports for a station that would refuse the agent
+/// outright -- full, in a domain whose stations turn arrivals away. Infinite
+/// rather than a flag so that every consumer that prices a wait already does the
+/// right thing with it: a cost-minimising policy never picks it, and the optimal
+/// planner's search never relaxes through it. The candidate builder drops such
+/// stations explicitly, so no planner is ever offered one.
+inline constexpr Hours kNoAdmission = std::numeric_limits<Hours>::infinity();
 
 /// How long will an agent wait, and how long will it charge?
 ///
@@ -26,8 +36,9 @@ class WaitOracle {
 public:
     virtual ~WaitOracle() = default;
 
-    /// Expected queueing delay for an agent reaching `node` at `arrivalTime`.
-    /// Implementations that do not model time ignore the second argument.
+    /// Expected queueing delay for an agent reaching `node` at `arrivalTime`, or
+    /// kNoAdmission if the station would turn it away. Implementations that do
+    /// not model time ignore the second argument.
     virtual Hours expectedWait(NodeId node, Hours arrivalTime) const = 0;
 
     /// Time to transfer `energy` once plugged in.

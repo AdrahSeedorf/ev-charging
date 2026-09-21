@@ -26,6 +26,7 @@ struct Event {
 /// An agent in flight.
 struct Runner {
     NodeId at{kNoNode};
+    NodeId headingFor{kNoNode};  ///< the station the last decision drove towards
     Resource level{0.0};
     int steps{0};
     bool done{false};
@@ -85,6 +86,14 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
         agent.capacity = demand.capacity;
         agent.consumption = demand.consumption;
         agent.now = event.time;
+
+        // Arrived where we were heading, and it filled up on the way. The planner
+        // below will see the refusal and route elsewhere; this only records it.
+        if (runner.headingFor != kNoNode && runner.at == runner.headingFor &&
+            runtime.expectedWait(runner.at, event.time) == kNoAdmission) {
+            ++runner.trip.turnedAway;
+        }
+        runner.headingFor = kNoNode;
 
         // A top-up mission is a single round trip with one decision, so it is
         // resolved in one step rather than driven through the arrival loop.
@@ -148,6 +157,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                 runner.trip.distanceKm += leg;
                 runner.trip.drivingHours += travel;
                 runner.at = action.target;
+                runner.headingFor = action.target;
                 // Decide again on arrival: congestion may have moved on since.
                 schedule.push(Event{event.time + travel, event.index});
                 break;

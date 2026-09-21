@@ -79,6 +79,7 @@ std::vector<Candidate> buildCandidates(const Network& network,
         // estimate and a stale one.
         const Hours arrivalTime = agent.now + drivingTime(detour, config.speedKmh);
         candidate.waitHours = oracle.expectedWait(candidateNode, arrivalTime);
+        if (candidate.waitHours == kNoAdmission) continue;  // full, and nowhere to wait
         candidate.serviceHours = oracle.serviceTime(candidateNode, amount);
         candidates.push_back(candidate);
     }
@@ -131,6 +132,7 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
         candidate.energyCost = delivered * node.station->pricePerUnit;
         const Hours arrivalTime = agent.now + drivingTime(distance, config.speedKmh);
         candidate.waitHours = oracle.expectedWait(candidateNode, arrivalTime);
+        if (candidate.waitHours == kNoAdmission) continue;  // full, and nowhere to wait
         candidate.serviceHours = oracle.serviceTime(candidateNode, delivered);
         candidates.push_back(candidate);
     }

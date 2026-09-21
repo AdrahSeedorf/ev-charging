@@ -99,6 +99,7 @@ public:
         return ev_->distanceOnResource(r, c) / k_;
     }
     Hours serviceDuration(Resource a, Rate r) const override { return ev_->serviceDuration(a, r / k_); }
+    Admission admission() const override { return ev_->admission(); }
 
 private:
     double k_;

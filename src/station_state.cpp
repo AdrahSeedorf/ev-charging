@@ -12,6 +12,13 @@ Hours StationState::expectedWait(NodeId id) const {
     const Node& node = network_->node(id);
     if (!node.hasStation() || node.station->servers <= 0) return 0.0;
     const int queued = queue_[static_cast<std::size_t>(id)];
+    // This engine never releases anyone, so "full" means `servers` agents have
+    // ever been assigned. Under turn-away that closes the station for the rest of
+    // the run -- stage 1's never-departing queue taken to its conclusion, and one
+    // more reason the event-driven engine is the one to believe.
+    if (queued >= node.station->servers && network_->domain().admission() == Admission::TurnAway) {
+        return kNoAdmission;
+    }
     return kHoursPerQueuedVehicle * static_cast<double>(queued) /
            static_cast<double>(node.station->servers);
 }
