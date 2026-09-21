@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "evnet/network.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 
 namespace evnet {
 

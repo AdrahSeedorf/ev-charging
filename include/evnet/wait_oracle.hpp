@@ -1,7 +1,7 @@
 #pragma once
 
 #include "evnet/network.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 
 namespace evnet {
 
@@ -31,7 +31,7 @@ public:
     virtual Hours expectedWait(NodeId node, Hours arrivalTime) const = 0;
 
     /// Time to transfer `energy` once plugged in.
-    virtual Hours serviceTime(NodeId node, Kwh energy) const = 0;
+    virtual Hours serviceTime(NodeId node, Resource energy) const = 0;
 };
 
 }  // namespace evnet

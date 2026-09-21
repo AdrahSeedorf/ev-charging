@@ -5,6 +5,7 @@
 #include <numeric>
 
 #include "evnet/simulator.hpp"
+#include "evnet/units.hpp"  // EV physics: this file is about cars
 #include "fixtures.hpp"
 
 using namespace evnet;

@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "evnet/network.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 #include "evnet/wait_oracle.hpp"
 
 namespace evnet {
@@ -41,7 +41,7 @@ public:
     Hours expectedWait(NodeId id, Hours arrivalTime) const override;
 
     /// Time to actually deliver `energy` once plugged in.
-    Hours serviceTime(NodeId id, Kwh energy) const override;
+    Hours serviceTime(NodeId id, Resource energy) const override;
 
     int queueLength(NodeId id) const;
     void enqueue(NodeId id);

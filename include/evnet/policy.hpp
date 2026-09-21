@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "evnet/network.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 
 namespace evnet {
 
@@ -19,13 +19,13 @@ struct Candidate {
     NodeId node{kNoNode};
     Km detourKm{0.0};       ///< distance from current position to this station
     Km progressKm{0.0};     ///< reduction in remaining distance to destination
-    Kwh amount{0.0};     ///< energy to be taken on here
+    Resource amount{0.0};     ///< energy to be taken on here
     /// State of charge on departure. Carried explicitly rather than recomputed by
     /// the caller as (soc - travel + charge): that round trip through subtraction
     /// and re-addition loses the low bits, which was enough to leave a agent
     /// needing exactly 70.3 kWh departing with 70.29999999999999 and then failing
     /// a later "can I finish" test by a rounding error.
-    Kwh levelAfter{0.0};
+    Resource levelAfter{0.0};
     Dollars travelCost{0.0};
     Dollars energyCost{0.0};
     Hours waitHours{0.0};

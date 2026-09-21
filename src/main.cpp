@@ -25,6 +25,7 @@
 #include "evnet/station_runtime.hpp"
 #include "evnet/siting.hpp"
 #include "evnet/station_state.hpp"
+#include "evnet/units.hpp"  // EV physics: this file is about cars
 
 #include <fstream>
 
@@ -315,7 +316,7 @@ int cmdRouteEvents(const Options& options) {
 
     std::cout << "Charging plan (planner: " << planner->name() << ", battery "
               << std::setprecision(0) << demand.capacity << " kWh, starting charge "
-              << demand.level << " kWh -> range " << std::setprecision(0) << demand.rangeKm()
+              << demand.level << " kWh -> range " << std::setprecision(0) << network.domain().distanceOnResource(demand.level, demand.consumption)
               << " km)\n";
     if (!trip.completed) {
         std::cout << "  INCOMPLETE: " << trip.failure << "\n";
@@ -376,7 +377,7 @@ int cmdRouteStatic(const Options& options) {
 
     std::cout << "Charging plan (policy: " << policy->name() << ", battery " << std::setprecision(0)
               << demand.capacity << " kWh, starting charge " << demand.level << " kWh -> range "
-              << std::setprecision(0) << demand.rangeKm() << " km)\n";
+              << std::setprecision(0) << network.domain().distanceOnResource(demand.level, demand.consumption) << " km)\n";
     if (!result.completed) {
         std::cout << "  INCOMPLETE: " << result.failure << "\n";
         return 1;

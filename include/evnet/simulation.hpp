@@ -7,7 +7,7 @@
 #include "evnet/policy.hpp"
 #include "evnet/router.hpp"
 #include "evnet/station_state.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 
 namespace evnet {
 
@@ -26,10 +26,10 @@ struct Demand {
     int id{0};
     NodeId origin{kNoNode};
     NodeId destination{kNoNode};
-    Kwh capacity{0.0};
-    Kwh level{0.0};  ///< state of charge at the start
-    KwhPer100Km consumption{18.0};
-    Kwh requiredAmount{0.0};
+    Resource capacity{0.0};
+    Resource level{0.0};  ///< state of charge at the start
+    PerDistance consumption{18.0};
+    Resource requiredAmount{0.0};
     /// When this agent enters the system, in hours from the start of the run.
     /// Optional in the CSV (defaults to zero) so stage 1 datasets still load; the
     /// event-driven engine needs it, because a fleet that all departs at once is
@@ -37,14 +37,13 @@ struct Demand {
     Hours releaseHour{0.0};
 
     bool isTopUp() const { return requiredAmount > 0.0; }
-    Km rangeKm() const { return rangeFromEnergy(level, consumption); }
 
     static std::vector<Demand> load(const std::string& csvPath);
 };
 
 struct Stop {
     NodeId node{kNoNode};
-    Kwh amount{0.0};
+    Resource amount{0.0};
     Dollars energyCost{0.0};
     Hours waitHours{0.0};
     Hours serviceHours{0.0};
@@ -128,9 +127,9 @@ private:
     /// Enforces the stranding guard described in the implementation.
     std::vector<Candidate> candidatesFor(NodeId at,
                                          NodeId destination,
-                                         Kwh level,
-                                         Kwh capacity,
-                                         KwhPer100Km consumption,
+                                         Resource level,
+                                         Resource capacity,
+                                         PerDistance consumption,
                                          const StationState& state) const;
 
     const Network* network_;

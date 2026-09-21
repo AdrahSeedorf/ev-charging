@@ -6,7 +6,7 @@ namespace evnet {
 namespace {
 
 /// Below this, an amount of energy is not worth stopping for.
-constexpr Kwh kNegligibleAmount = 0.01;
+constexpr Resource kNegligibleAmount = 0.01;
 
 }  // namespace
 
@@ -16,17 +16,19 @@ std::vector<Candidate> buildCandidates(const Network& network,
                                        const AgentState& agent,
                                        const FeasibilityConfig& config) {
     std::vector<Candidate> candidates;
+    const Domain& domain = network.domain();
 
     const Km distanceToDestination = router.distance(agent.at, agent.destination);
     if (distanceToDestination == Router::kUnreachable) return candidates;
 
     const Km rangeAfterFullCharge =
-        rangeFromEnergy(agent.capacity * (1.0 - config.reserveFraction), agent.consumption);
+        domain.distanceOnResource(agent.capacity * (1.0 - config.reserveFraction), agent.consumption);
 
     // The agent's own node is a legitimate option when it has a charger: a car
     // sitting at a charging station can obviously use it. `reachableWithin`
     // excludes the origin, so it must be added back explicitly.
-    std::vector<NodeId> options = router.reachableWithin(agent.at, agent.rangeKm());
+    const Km range = domain.distanceOnResource(agent.level, agent.consumption);
+    std::vector<NodeId> options = router.reachableWithin(agent.at, range);
     if (network.node(agent.at).hasStation()) options.push_back(agent.at);
 
     for (const NodeId candidateNode : options) {
@@ -54,13 +56,13 @@ std::vector<Candidate> buildCandidates(const Network& network,
         }
         if (!onwardOk) continue;
 
-        const Kwh socOnArrival = agent.level - energyForDistance(detour, agent.consumption);
+        const Resource socOnArrival = agent.level - domain.resourceForDistance(detour, agent.consumption);
         if (socOnArrival < 0.0) continue;  // defensive; reachableWithin should prevent this
 
-        const Kwh energyToFinish = energyForDistance(remainingAfter, agent.consumption) +
+        const Resource energyToFinish = domain.resourceForDistance(remainingAfter, agent.consumption) +
                                    agent.capacity * config.reserveFraction;
-        const Kwh target = std::min(agent.capacity, energyToFinish);
-        const Kwh energy = target - socOnArrival;
+        const Resource target = std::min(agent.capacity, energyToFinish);
+        const Resource energy = target - socOnArrival;
         if (energy <= kNegligibleAmount) continue;
 
         Candidate candidate;
@@ -88,11 +90,13 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
                                             const Router& router,
                                             const WaitOracle& oracle,
                                             const AgentState& agent,
-                                            Kwh requiredAmount,
+                                            Resource requiredAmount,
                                             const FeasibilityConfig& config) {
     std::vector<Candidate> candidates;
+    const Domain& domain = network.domain();
 
-    std::vector<NodeId> options = router.reachableWithin(agent.at, agent.rangeKm());
+    const Km range = domain.distanceOnResource(agent.level, agent.consumption);
+    std::vector<NodeId> options = router.reachableWithin(agent.at, range);
     if (network.node(agent.at).hasStation()) options.push_back(agent.at);
 
     for (const NodeId candidateNode : options) {
@@ -101,16 +105,16 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
 
         const Km distance =
             candidateNode == agent.at ? 0.0 : router.distance(agent.at, candidateNode);
-        const Kwh outbound = energyForDistance(distance, agent.consumption);
-        const Kwh socOnArrival = agent.level - outbound;
+        const Resource outbound = domain.resourceForDistance(distance, agent.consumption);
+        const Resource socOnArrival = agent.level - outbound;
         if (socOnArrival < 0.0) continue;
 
         // The agent charges on arrival, so the return leg is funded by the
         // top-up. It still has to have enough left to get home.
-        const Kwh afterCharging = std::min(agent.capacity, socOnArrival + requiredAmount);
+        const Resource afterCharging = std::min(agent.capacity, socOnArrival + requiredAmount);
         if (afterCharging < outbound) continue;
 
-        const Kwh delivered = afterCharging - socOnArrival;
+        const Resource delivered = afterCharging - socOnArrival;
         if (delivered <= kNegligibleAmount) continue;
 
         Candidate candidate;

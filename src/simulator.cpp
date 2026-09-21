@@ -26,7 +26,7 @@ struct Event {
 /// A agent in flight.
 struct Runner {
     NodeId at{kNoNode};
-    Kwh soc{0.0};
+    Resource soc{0.0};
     int steps{0};
     bool done{false};
     TimedTrip trip;
@@ -125,11 +125,12 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
             case Action::Kind::DriveToDestination: {
                 const Km leg = router_->distance(runner.at, demand.destination);
                 const Hours travel = drivingTime(leg, config_.speedKmh);
-                runner.soc -= energyForDistance(leg, demand.consumption);
+                runner.soc -= network_->domain().resourceForDistance(leg, demand.consumption);
                 runner.trip.distanceKm += leg;
                 runner.trip.drivingHours += travel;
                 runner.trip.travelCost = runner.trip.distanceKm * config_.travelCostPerKm;
                 runner.trip.finishTime = event.time + travel;
+                runner.trip.levelAtFinish = runner.soc;
                 runner.trip.completed = true;
                 runner.done = true;
                 break;
@@ -143,7 +144,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                     break;
                 }
                 const Hours travel = drivingTime(leg, config_.speedKmh);
-                runner.soc -= energyForDistance(leg, demand.consumption);
+                runner.soc -= network_->domain().resourceForDistance(leg, demand.consumption);
                 runner.trip.distanceKm += leg;
                 runner.trip.drivingHours += travel;
                 runner.at = action.target;

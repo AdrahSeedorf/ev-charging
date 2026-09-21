@@ -2,6 +2,7 @@
 
 #include "evnet/network.hpp"
 #include "evnet/simulation.hpp"
+#include "evnet/units.hpp"  // EV physics: this file is about cars
 
 namespace evnet::testing {
 

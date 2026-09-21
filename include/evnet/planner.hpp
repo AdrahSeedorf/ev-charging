@@ -8,7 +8,7 @@
 #include "evnet/network.hpp"
 #include "evnet/policy.hpp"
 #include "evnet/router.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 #include "evnet/wait_oracle.hpp"
 
 namespace evnet {
@@ -24,12 +24,12 @@ struct Action {
 
     Kind kind{Kind::Infeasible};
     NodeId target{kNoNode};
-    Kwh amount{0.0};
+    Resource amount{0.0};
     std::string reason;
 
     static Action driveToDestination() { return {Kind::DriveToDestination, kNoNode, 0.0, {}}; }
     static Action driveTo(NodeId node) { return {Kind::DriveToStation, node, 0.0, {}}; }
-    static Action serviceHere(Kwh energy) { return {Kind::ServiceHere, kNoNode, energy, {}}; }
+    static Action serviceHere(Resource energy) { return {Kind::ServiceHere, kNoNode, energy, {}}; }
     static Action infeasible(std::string why) {
         return {Kind::Infeasible, kNoNode, 0.0, std::move(why)};
     }

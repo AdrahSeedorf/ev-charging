@@ -1,13 +1,15 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "evnet/domain.hpp"
 #include "evnet/geo.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 
 namespace evnet {
 
@@ -19,7 +21,7 @@ inline constexpr NodeId kNoNode = -1;
 struct Station {
     Dollars pricePerUnit{0.0};
     int servers{0};
-    Kw ratePerHour{50.0};
+    Rate ratePerHour{50.0};
 };
 
 struct Node {
@@ -90,10 +92,20 @@ public:
     /// coordinates.
     std::optional<Km> straightLineKm(NodeId a, NodeId b) const;
 
+    /// What kind of agent this network is for, and so how resource, distance
+    /// and service time relate on it. Every physics question the engine asks
+    /// goes through here. A network belongs to exactly one domain -- mixing
+    /// EV chargers and truck parking in one graph would be meaningless -- which
+    /// is why the domain lives on the network rather than being threaded
+    /// through every call. Defaults to EV, which every shipped dataset is.
+    const Domain& domain() const { return *domain_; }
+    void setDomain(std::shared_ptr<const Domain> domain);
+
 private:
     std::vector<Node> nodes_;
     std::vector<std::vector<Edge>> adjacency_;
     std::unordered_map<std::string, NodeId> byName_;
+    std::shared_ptr<const Domain> domain_ = electricVehicle();
 };
 
 }  // namespace evnet

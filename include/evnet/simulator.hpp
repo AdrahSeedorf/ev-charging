@@ -25,6 +25,10 @@ struct TimedTrip {
     Hours waitHours{0.0};    ///< measured queueing, summed over stops
     Hours serviceHours{0.0};  ///< measured time plugged in
     Hours drivingHours{0.0};
+    /// Resource left on arrival at the destination. For an EV, charge in the
+    /// battery at journey's end; for a driver, legal hours still in hand. Not
+    /// meaningful for a trip that did not complete.
+    Resource levelAtFinish{0.0};
 
     Dollars moneyCost() const { return travelCost + energyCost; }
     /// Time spent at stations.

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <set>
 #include <stdexcept>
+#include <utility>
 
 #include "evnet/csv.hpp"
 
@@ -255,6 +256,11 @@ std::vector<std::string> Network::validate() const {
     }
 
     return warnings;
+}
+
+void Network::setDomain(std::shared_ptr<const Domain> domain) {
+    if (!domain) throw std::invalid_argument("network: domain must not be null");
+    domain_ = std::move(domain);
 }
 
 }  // namespace evnet

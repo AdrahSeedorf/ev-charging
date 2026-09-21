@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "evnet/network.hpp"
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 #include "evnet/wait_oracle.hpp"
 
 namespace evnet {
@@ -16,7 +16,7 @@ struct ServiceRecord {
     Hours arrival{0.0};  ///< reached the station
     Hours start{0.0};    ///< plugged in
     Hours finish{0.0};   ///< unplugged
-    Kwh amount{0.0};
+    Resource amount{0.0};
 
     Hours wait() const { return start - arrival; }
     Hours service() const { return finish - start; }
@@ -49,11 +49,11 @@ public:
     /// given everything committed so far. This is what planners consult; unlike
     /// stage 1's estimate it actually depends on when the agent turns up.
     Hours expectedWait(NodeId node, Hours arrivalTime) const override;
-    Hours serviceTime(NodeId node, Kwh energy) const override;
+    Hours serviceTime(NodeId node, Resource energy) const override;
 
     /// Commit a charging session and return its measured record. Occupies the
     /// earliest-free charger from max(arrivalTime, that charger's free time).
-    ServiceRecord admit(NodeId node, int vehicleId, Hours arrivalTime, Kwh energy);
+    ServiceRecord admit(NodeId node, int vehicleId, Hours arrivalTime, Resource energy);
 
     /// Vehicles that have arrived but not yet plugged in, at instant `t`.
     int waitingAt(NodeId node, Hours t) const;

@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "evnet/units.hpp"
+#include "evnet/quantities.hpp"
 
 namespace evnet {
 

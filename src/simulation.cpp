@@ -15,7 +15,7 @@ namespace {
 /// has exactly enough can land a fraction of a microjoule short. Without this
 /// tolerance such a vehicle is declared stranded, which is a rounding artefact
 /// rather than a transport outcome.
-constexpr Kwh kEnergyEpsilon = 1e-6;
+constexpr Resource kEnergyEpsilon = 1e-6;
 
 }  // namespace
 
@@ -58,9 +58,9 @@ Allocator::Allocator(const Network& network, const Router& router, SimulationCon
 
 std::vector<Candidate> Allocator::candidatesFor(NodeId at,
                                                 NodeId destination,
-                                                Kwh level,
-                                                Kwh capacity,
-                                                KwhPer100Km consumption,
+                                                Resource level,
+                                                Resource capacity,
+                                                PerDistance consumption,
                                                 const StationState& state) const {
     // Delegates to the shared builder in candidates.cpp. The feasibility rules --
     // both stranding guards and the energy arithmetic -- are subtle enough that
@@ -92,7 +92,7 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
     }
 
     NodeId at = demand.origin;
-    Kwh soc = demand.level;
+    Resource soc = demand.level;
 
     for (int stop = 0; stop <= config_.maxStopsPerTrip; ++stop) {
         const Km remaining = router_->distance(at, demand.destination);
@@ -102,8 +102,8 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
         }
 
         // Can we finish from here, keeping the reserve intact?
-        const Kwh needed =
-            energyForDistance(remaining, demand.consumption) + demand.capacity * config_.reserveFraction;
+        const Resource needed =
+            network_->domain().resourceForDistance(remaining, demand.consumption) + demand.capacity * config_.reserveFraction;
         if (soc + kEnergyEpsilon >= needed || remaining == 0.0) {
             result.distanceKm += remaining;
             result.travelCost = result.distanceKm * config_.travelCostPerKm;

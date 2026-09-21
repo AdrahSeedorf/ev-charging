@@ -24,13 +24,13 @@ Hours StationRuntime::expectedWait(NodeId node, Hours arrivalTime) const {
     return std::max(0.0, earliestFree - arrivalTime);
 }
 
-Hours StationRuntime::serviceTime(NodeId node, Kwh energy) const {
+Hours StationRuntime::serviceTime(NodeId node, Resource energy) const {
     const Node& n = network_->node(node);
     if (!n.hasStation()) return 0.0;
-    return stopOverhead_ + chargeDuration(energy, n.station->ratePerHour);
+    return stopOverhead_ + network_->domain().serviceDuration(energy, n.station->ratePerHour);
 }
 
-ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTime, Kwh energy) {
+ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTime, Resource energy) {
     auto& servers = serverFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
     if (servers.empty()) {
         throw std::runtime_error("station runtime: '" + network_->node(node).name +

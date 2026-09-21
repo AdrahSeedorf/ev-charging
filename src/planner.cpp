@@ -15,15 +15,16 @@ namespace {
 /// a fixed underlying type trips older GCC parsers.
 enum class Move : unsigned char { None, Drive, Charge };
 
-constexpr Kwh kResourceEpsilon = 1e-6;
+constexpr Resource kResourceEpsilon = 1e-6;
 constexpr Dollars kInfiniteCost = std::numeric_limits<Dollars>::infinity();
 
 /// Can the agent finish from where it stands, keeping its reserve?
-bool canFinish(const Router& router, const AgentState& agent, double reserveFraction) {
+bool canFinish(const Router& router, const Domain& domain, const AgentState& agent,
+               double reserveFraction) {
     const Km remaining = router.distance(agent.at, agent.destination);
     if (remaining == Router::kUnreachable) return false;
     if (remaining == 0.0) return true;
-    const Kwh needed = energyForDistance(remaining, agent.consumption) +
+    const Resource needed = domain.resourceForDistance(remaining, agent.consumption) +
                        agent.capacity * reserveFraction;
     return agent.level + kResourceEpsilon >= needed;
 }
@@ -46,7 +47,7 @@ Action GreedyPlanner::decide(const AgentState& agent, const WaitOracle& oracle) 
     if (router_->distance(agent.at, agent.destination) == Router::kUnreachable) {
         return Action::infeasible("destination unreachable from " + network_->node(agent.at).name);
     }
-    if (canFinish(*router_, agent, config_.reserveFraction)) {
+    if (canFinish(*router_, network_->domain(), agent, config_.reserveFraction)) {
         return Action::driveToDestination();
     }
 
@@ -88,7 +89,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
 
     const std::size_t nodeCount = network_->size();
     const auto levelCount = static_cast<std::size_t>(levels_) + 1;
-    const Kwh step = agent.capacity / static_cast<double>(levels_);
+    const Resource step = agent.capacity / static_cast<double>(levels_);
     if (step <= 0.0) return plan;
 
     // Round the starting charge DOWN onto the grid: the planner must never assume
@@ -188,7 +189,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
 
         for (const auto& edge : network_->neighbours(static_cast<NodeId>(node))) {
             if (mustChargeFirst) break;
-            const Kwh burn = energyForDistance(edge.distanceKm, agent.consumption);
+            const Resource burn = network_->domain().resourceForDistance(edge.distanceKm, agent.consumption);
             const auto burnLevels = static_cast<std::size_t>(std::ceil(burn / step));
             if (burnLevels > level) continue;
             const std::size_t remaining = level - burnLevels;
@@ -212,9 +213,9 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
         // Transition 2: charge here, to any higher level.
         if (couldChargeHere) {
             for (std::size_t target = level + 1; target < levelCount; ++target) {
-                const Kwh energy = static_cast<double>(target - level) * step;
+                const Resource energy = static_cast<double>(target - level) * step;
                 const Hours duration =
-                    config_.stopOverheadHours + chargeDuration(energy, here.station->ratePerHour);
+                    config_.stopOverheadHours + network_->domain().serviceDuration(energy, here.station->ratePerHour);
                 const Dollars added = energy * here.station->pricePerUnit +
                                       (waitAt[node] + duration) * valueOfTime_;
                 relax(index(node, target), added, Move::Charge);
@@ -258,12 +259,12 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
 
         const std::size_t fromLevel = path[0] % levelCount;
         const std::size_t toLevel = path[1] % levelCount;
-        const Kwh gridEnergy = static_cast<double>(toLevel - fromLevel) * step;
+        const Resource gridEnergy = static_cast<double>(toLevel - fromLevel) * step;
 
         const Km leg = router_->distance(agent.at, nextTarget);
-        Kwh exactEnergy = 0.0;
+        Resource exactEnergy = 0.0;
         if (leg != Router::kUnreachable) {
-            const Kwh needed = energyForDistance(leg, agent.consumption) +
+            const Resource needed = network_->domain().resourceForDistance(leg, agent.consumption) +
                                agent.capacity * config_.reserveFraction;
             exactEnergy = std::min(agent.capacity, needed) - agent.level;
         }
@@ -281,7 +282,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
         // The grid amount exceeding the exact requirement by more than one level is
         // what separates the second case from rounding noise in the first.
         const bool bulkBuying = gridEnergy > exactEnergy + step;
-        Kwh energy = bulkBuying ? gridEnergy : exactEnergy;
+        Resource energy = bulkBuying ? gridEnergy : exactEnergy;
         if (energy <= kResourceEpsilon) energy = gridEnergy;
 
         plan.first = Action::serviceHere(energy);
@@ -303,7 +304,7 @@ Action OptimalPlanner::decide(const AgentState& agent, const WaitOracle& oracle)
     if (router_->distance(agent.at, agent.destination) == Router::kUnreachable) {
         return Action::infeasible("destination unreachable from " + network_->node(agent.at).name);
     }
-    if (canFinish(*router_, agent, config_.reserveFraction)) {
+    if (canFinish(*router_, network_->domain(), agent, config_.reserveFraction)) {
         return Action::driveToDestination();
     }
 
