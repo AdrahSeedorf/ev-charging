@@ -28,6 +28,7 @@ option(EVNET_BUILD_TESTS "Build the test suite" ON)
 add_library(evnet_core STATIC
         src/candidates.cpp
         src/csv.cpp
+        src/domain.cpp
         src/network.cpp
         src/planner.cpp
         src/policy.cpp

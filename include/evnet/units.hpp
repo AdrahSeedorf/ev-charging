@@ -45,11 +45,4 @@ inline Hours chargeDuration(Kwh energy, Kw powerKw) {
     return energy / powerKw;
 }
 
-/// Time to cover `distance` at an average speed. Stage 1 had no notion of driving
-/// taking time at all, which is why nothing spread out across a day.
-inline Hours drivingTime(Km distance, double speedKmh) {
-    if (speedKmh <= 0.0) return 0.0;
-    return distance / speedKmh;
-}
-
 }  // namespace evnet

@@ -51,4 +51,13 @@ using Rate = double;
 /// reciprocal of speed for a driver burning hours to cover ground.
 using PerDistance = double;
 
+/// Time to cover `distance` at an average speed. Lives here rather than with the
+/// EV physics because it is true of anything that moves: distance over speed
+/// needs no domain. Stage 1 had no notion of travel taking time at all, which is
+/// why nothing spread out across a day.
+inline Hours drivingTime(Km distance, double speedKmh) {
+    if (speedKmh <= 0.0) return 0.0;
+    return distance / speedKmh;
+}
+
 }  // namespace evnet

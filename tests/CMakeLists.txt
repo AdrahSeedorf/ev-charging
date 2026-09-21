@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(evnet_tests
         test_datasets.cpp
+        test_domain.cpp
         test_network.cpp
         test_policy.cpp
         test_router.cpp
