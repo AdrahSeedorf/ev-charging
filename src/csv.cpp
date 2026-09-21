@@ -111,6 +111,22 @@ void Reader::requireColumns(const std::vector<std::string>& columns) const {
     }
 }
 
+std::string Reader::oneOf(const std::vector<std::string>& alternatives) const {
+    std::vector<std::string> present;
+    for (const auto& name : alternatives) {
+        if (std::find(header_.begin(), header_.end(), name) != header_.end()) present.push_back(name);
+    }
+    if (present.size() == 1) return present.front();
+
+    std::string listed;
+    for (const auto& name : alternatives) listed += (listed.empty() ? "'" : ", '") + name + "'";
+    if (present.empty()) {
+        throw std::runtime_error("csv: '" + path_ + "' needs one of the columns " + listed);
+    }
+    throw std::runtime_error("csv: '" + path_ + "' has more than one of the columns " + listed +
+                             " -- they mean the same thing, so keep one");
+}
+
 std::string escape(const std::string& field) {
     if (field.find(',') == std::string::npos && field.find('"') == std::string::npos) {
         return field;

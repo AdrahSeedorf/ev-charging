@@ -50,6 +50,12 @@ public:
     /// Throws unless every named column is present.
     void requireColumns(const std::vector<std::string>& columns) const;
 
+    /// The first of `alternatives` present in the header -- for a column that may
+    /// go by a domain's own name or a neutral one. Throws, naming every
+    /// alternative, if none is present, and if more than one is: a file that
+    /// says both `chargers` and `servers` has not said which one it means.
+    std::string oneOf(const std::vector<std::string>& alternatives) const;
+
 private:
     std::string path_;
     std::vector<std::string> header_;

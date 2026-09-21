@@ -16,6 +16,7 @@ add_executable(evnet_tests
         test_network.cpp
         test_policy.cpp
         test_router.cpp
+        test_schema.cpp
         test_service.cpp
         test_simulation.cpp
         test_simulator.cpp

@@ -23,7 +23,13 @@ Network Network::load(const std::string& nodesCsvPath, const std::string& edgesC
     Network network;
 
     const csv::Reader nodesCsv(nodesCsvPath);
-    nodesCsv.requireColumns({"id", "name", "has_station", "price_per_kwh", "chargers", "power_kw"});
+    nodesCsv.requireColumns({"id", "name", "has_station"});
+    // Each station column may use the EV name every shipped dataset was written
+    // with, or the domain-neutral name the engine now uses. A truck rest area has
+    // parking bays, not chargers, and should not have to call them that.
+    const std::string priceColumn = nodesCsv.oneOf({"price_per_kwh", "price_per_unit"});
+    const std::string serversColumn = nodesCsv.oneOf({"chargers", "servers"});
+    const std::string rateColumn = nodesCsv.oneOf({"power_kw", "rate_per_hour"});
 
     // Nodes are keyed by a contiguous id, so sort defensively rather than trusting
     // file order -- the vector index must match the declared id.
@@ -38,9 +44,9 @@ Network Network::load(const std::string& nodesCsvPath, const std::string& edgesC
         }
         if (row.boolean("has_station")) {
             Station station;
-            station.pricePerUnit = row.number("price_per_kwh");
-            station.servers = row.integer("chargers");
-            station.ratePerHour = row.number("power_kw");
+            station.pricePerUnit = row.number(priceColumn);
+            station.servers = row.integer(serversColumn);
+            station.ratePerHour = row.number(rateColumn);
             if (station.pricePerUnit < 0.0) {
                 throw std::runtime_error("network: negative price at '" + node.name + "'");
             }

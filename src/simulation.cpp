@@ -21,8 +21,13 @@ constexpr Resource kResourceEpsilon = 1e-6;
 
 std::vector<Demand> Demand::load(const std::string& csvPath) {
     const csv::Reader reader(csvPath);
-    reader.requireColumns({"id", "origin_id", "destination_id", "battery_kwh", "soc_kwh",
-                           "efficiency_kwh_per_100km", "required_kwh"});
+    reader.requireColumns({"id", "origin_id", "destination_id"});
+    // EV names, as every shipped dataset uses, or the engine's neutral ones: a
+    // driver's clock is not a battery. See Network::load.
+    const std::string capacityColumn = reader.oneOf({"battery_kwh", "capacity"});
+    const std::string levelColumn = reader.oneOf({"soc_kwh", "level"});
+    const std::string consumptionColumn = reader.oneOf({"efficiency_kwh_per_100km", "consumption"});
+    const std::string requiredColumn = reader.oneOf({"required_kwh", "required_amount"});
 
     std::vector<Demand> demands;
     demands.reserve(reader.rows().size());
@@ -31,22 +36,22 @@ std::vector<Demand> Demand::load(const std::string& csvPath) {
         demand.id = row.integer("id");
         demand.origin = row.integer("origin_id");
         demand.destination = row.integer("destination_id");
-        demand.capacity = row.number("battery_kwh");
-        demand.level = row.number("soc_kwh");
-        demand.consumption = row.number("efficiency_kwh_per_100km");
-        demand.requiredAmount = row.number("required_kwh");
+        demand.capacity = row.number(capacityColumn);
+        demand.level = row.number(levelColumn);
+        demand.consumption = row.number(consumptionColumn);
+        demand.requiredAmount = row.number(requiredColumn);
         // Optional: absent in stage 1 datasets, which then all release at t=0.
         if (row.has("release_hour")) demand.releaseHour = row.number("release_hour");
 
         if (demand.capacity <= 0.0) {
-            throw std::runtime_error("demand " + std::to_string(demand.id) + " has no battery capacity");
+            throw std::runtime_error("demand " + std::to_string(demand.id) + " has no capacity");
         }
         if (demand.consumption <= 0.0) {
             throw std::runtime_error("demand " + std::to_string(demand.id) + " has non-positive consumption");
         }
         if (demand.level > demand.capacity) {
             throw std::runtime_error("demand " + std::to_string(demand.id) +
-                                     " starts with more charge than its battery holds");
+                                     " starts with more than its capacity");
         }
         demands.push_back(demand);
     }
