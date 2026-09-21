@@ -192,7 +192,11 @@ std::vector<std::string> Network::validate() const {
         if (node.hasStation() && node.station->servers <= 0) {
             warnings.push_back("'" + node.name + "' has a station with no chargers");
         }
-        if (node.hasStation() && node.station->ratePerHour <= 0.0) {
+        // The concern is a station that serves in no time at all -- for an EV, a
+        // charger with no power. Asked of the domain rather than of the rate,
+        // because a rate is not always meaningful: a driver's rest lasts seven
+        // hours whatever figure sits in the rate column.
+        if (node.hasStation() && domain_->serviceDuration(1.0, node.station->ratePerHour) <= 0.0) {
             warnings.push_back("'" + node.name + "' has a station with no charging power");
         }
     }

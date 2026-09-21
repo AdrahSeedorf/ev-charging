@@ -172,3 +172,20 @@ TEST_CASE("a dataset's domain name builds the right domain, at the simulator's s
     CHECK_THROWS_AS(makeDomain("lorry", 80.0), std::invalid_argument);
     for (const auto& name : domainNames()) CHECK_NOTHROW(makeDomain(name, 80.0));
 }
+
+TEST_CASE("a rest area is not faulted for having no charging power", "[truck]") {
+    // The validator's concern is a station that serves in no time. For an EV,
+    // zero power means exactly that; for a driver, the rest takes seven hours
+    // whatever the rate column says.
+    Network ev = restAreaCorridor(2);
+    ev.setDomain(electricVehicle());
+    const Network truck_ = restAreaCorridor(2);
+    const auto mentionsPower = [](const std::vector<std::string>& warnings) {
+        for (const auto& w : warnings) {
+            if (w.find("charging power") != std::string::npos) return true;
+        }
+        return false;
+    };
+    CHECK(mentionsPower(ev.validate()));
+    CHECK_FALSE(mentionsPower(truck_.validate()));
+}
