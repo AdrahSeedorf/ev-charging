@@ -20,7 +20,7 @@ Hours StationState::expectedWait(NodeId id, Hours /*arrivalTime*/) const {
     return expectedWait(id);
 }
 
-Hours StationState::chargeTime(NodeId id, Kwh energy) const {
+Hours StationState::serviceTime(NodeId id, Kwh energy) const {
     const Node& node = network_->node(id);
     if (!node.hasStation()) return 0.0;
     return chargeDuration(energy, node.station->ratePerHour);

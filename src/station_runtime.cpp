@@ -7,31 +7,31 @@ namespace evnet {
 
 StationRuntime::StationRuntime(const Network& network, Hours stopOverheadHours)
     : network_(&network), stopOverhead_(stopOverheadHours) {
-    chargerFreeAt_.resize(network.size());
+    serverFreeAt_.resize(network.size());
     records_.resize(network.size());
     for (const auto& node : network.nodes()) {
         if (node.hasStation() && node.station->servers > 0) {
-            chargerFreeAt_[static_cast<std::size_t>(node.id)]
+            serverFreeAt_[static_cast<std::size_t>(node.id)]
                 .assign(static_cast<std::size_t>(node.station->servers), 0.0);
         }
     }
 }
 
 Hours StationRuntime::expectedWait(NodeId node, Hours arrivalTime) const {
-    const auto& servers = chargerFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
+    const auto& servers = serverFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
     if (servers.empty()) return 0.0;
     const Hours earliestFree = *std::min_element(servers.begin(), servers.end());
     return std::max(0.0, earliestFree - arrivalTime);
 }
 
-Hours StationRuntime::chargeTime(NodeId node, Kwh energy) const {
+Hours StationRuntime::serviceTime(NodeId node, Kwh energy) const {
     const Node& n = network_->node(node);
     if (!n.hasStation()) return 0.0;
     return stopOverhead_ + chargeDuration(energy, n.station->ratePerHour);
 }
 
 ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTime, Kwh energy) {
-    auto& servers = chargerFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
+    auto& servers = serverFreeAt_[static_cast<std::size_t>(network_->node(node).id)];
     if (servers.empty()) {
         throw std::runtime_error("station runtime: '" + network_->node(node).name +
                                  "' has no chargers to admit to");
@@ -47,7 +47,7 @@ ServiceRecord StationRuntime::admit(NodeId node, int vehicleId, Hours arrivalTim
     record.node = node;
     record.arrival = arrivalTime;
     record.start = std::max(arrivalTime, *slot);
-    record.finish = record.start + chargeTime(node, energy);
+    record.finish = record.start + serviceTime(node, energy);
     record.amount = energy;
 
     *slot = record.finish;
@@ -130,7 +130,7 @@ Hours StationRuntime::lastFinish() const {
 }
 
 void StationRuntime::reset() {
-    for (auto& servers : chargerFreeAt_) std::fill(servers.begin(), servers.end(), 0.0);
+    for (auto& servers : serverFreeAt_) std::fill(servers.begin(), servers.end(), 0.0);
     for (auto& perNode : records_) perNode.clear();
 }
 

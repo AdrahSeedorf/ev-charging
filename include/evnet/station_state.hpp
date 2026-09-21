@@ -41,7 +41,7 @@ public:
     Hours expectedWait(NodeId id, Hours arrivalTime) const override;
 
     /// Time to actually deliver `energy` once plugged in.
-    Hours chargeTime(NodeId id, Kwh energy) const override;
+    Hours serviceTime(NodeId id, Kwh energy) const override;
 
     int queueLength(NodeId id) const;
     void enqueue(NodeId id);

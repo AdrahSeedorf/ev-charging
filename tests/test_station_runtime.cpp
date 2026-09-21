@@ -134,7 +134,7 @@ TEST_CASE("nodes without chargers are inert rather than dangerous", "[runtime]")
     const Network network = testing::corridor();  // node 0 "Start" has no station
     StationRuntime runtime(network, 0.1);
     CHECK_THAT(runtime.expectedWait(0, 0.0), WithinAbs(0.0, 1e-12));
-    CHECK_THAT(runtime.chargeTime(0, 50.0), WithinAbs(0.0, 1e-12));
+    CHECK_THAT(runtime.serviceTime(0, 50.0), WithinAbs(0.0, 1e-12));
     CHECK_THROWS_AS(runtime.admit(0, 1, 0.0, 10.0), std::runtime_error);
 }
 

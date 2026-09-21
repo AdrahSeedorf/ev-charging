@@ -49,7 +49,7 @@ public:
     /// given everything committed so far. This is what planners consult; unlike
     /// stage 1's estimate it actually depends on when the agent turns up.
     Hours expectedWait(NodeId node, Hours arrivalTime) const override;
-    Hours chargeTime(NodeId node, Kwh energy) const override;
+    Hours serviceTime(NodeId node, Kwh energy) const override;
 
     /// Commit a charging session and return its measured record. Occupies the
     /// earliest-free charger from max(arrivalTime, that charger's free time).
@@ -80,7 +80,7 @@ private:
     const Network* network_;
     Hours stopOverhead_;
     /// Per node, per charger: the time that charger next becomes free.
-    std::vector<std::vector<Hours>> chargerFreeAt_;
+    std::vector<std::vector<Hours>> serverFreeAt_;
     std::vector<std::vector<ServiceRecord>> records_;
 };
 
