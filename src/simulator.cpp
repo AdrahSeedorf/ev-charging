@@ -219,6 +219,7 @@ TimedSummary Simulator::summarise(const std::vector<TimedTrip>& trips,
     std::vector<Hours> waits;
     double totalStops = 0.0;
     for (const auto& trip : trips) {
+        summary.turnedAway += trip.turnedAway;
         if (!trip.completed) {
             ++summary.stranded;
             continue;

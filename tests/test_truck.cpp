@@ -159,3 +159,16 @@ TEST_CASE("when the bays run out, a tired driver cannot legally go on", "[truck]
         CHECK(unlucky.stops.empty());
     }
 }
+
+TEST_CASE("a dataset's domain name builds the right domain, at the simulator's speed", "[truck][domain]") {
+    CHECK(makeDomain("ev", 80.0).get() == electricVehicle().get());
+
+    const auto t = makeDomain("truck", 90.0);
+    CHECK(t->name() == "truck");
+    CHECK(t->admission() == Admission::TurnAway);
+    // The speed handed in is the speed the clock runs at.
+    CHECK_THAT(t->resourceForDistance(90.0, kAllDrivingIsWork), WithinAbs(1.0, 1e-12));
+
+    CHECK_THROWS_AS(makeDomain("lorry", 80.0), std::invalid_argument);
+    for (const auto& name : domainNames()) CHECK_NOTHROW(makeDomain(name, 80.0));
+}

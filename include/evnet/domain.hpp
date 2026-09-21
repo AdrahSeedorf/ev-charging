@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "evnet/quantities.hpp"
 
@@ -153,5 +154,14 @@ public:
 private:
     double speedKmh_;
 };
+
+/// The domain a dataset names, e.g. in its domain.txt. `speedKmh` must be the
+/// simulator's: a domain whose resource is time needs it (see
+/// HeavyVehicleStandardHours), and the EV domain ignores it. Throws
+/// std::invalid_argument, listing the known names, for anything else.
+std::shared_ptr<const Domain> makeDomain(const std::string& name, double speedKmh);
+
+/// Names makeDomain accepts.
+std::vector<std::string> domainNames();
 
 }  // namespace evnet

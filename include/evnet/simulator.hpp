@@ -66,6 +66,9 @@ struct TimedSummary {
     double meanStops{0.0};
     Hours meanElapsedHours{0.0};
     int peakWaiting{0};
+    /// Refusals at full stations, summed over every trip -- completed or not,
+    /// since being turned away is often WHY a trip did not complete.
+    int turnedAway{0};
     std::string peakStation;
     Hours makespan{0.0};        ///< last finish across the fleet
     double peakUtilisation{0.0};///< busiest station's charger utilisation

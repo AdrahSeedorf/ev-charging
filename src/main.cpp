@@ -25,7 +25,7 @@
 #include "evnet/station_runtime.hpp"
 #include "evnet/siting.hpp"
 #include "evnet/station_state.hpp"
-#include "evnet/units.hpp"  // EV physics: this file is about cars
+#include "evnet/units.hpp"  // EV physics: the default domain's CLI vocabulary
 
 #include <fstream>
 
@@ -40,11 +40,15 @@ struct Options {
     std::string policy = "generalised";
     std::string from;
     std::string to;
-    Kwh battery = 60.0;
-    Kwh soc = -1.0;  // negative means "default to a fraction of the battery"
+    // Capacity, starting level and reserve default by domain, so each starts
+    // negative -- "not given" -- and is resolved once the dataset's domain is known.
+    Resource battery = -1.0;
+    Resource soc = -1.0;
+    double reserve = -1.0;
+    std::string domain = "ev";         // read from the dataset's domain.txt
     Dollars valueOfTime = 20.0;
     Dollars travelCostPerKm = 0.28;
-    Dollars newStationPrice = 0.45;
+    Dollars newStationPrice = -1.0;    // by domain: $0.45/kWh for EVs, free rest areas for trucks
     int newStationChargers = 4;
     Kw newStationPower = 150.0;
     std::size_t top = 5;
@@ -94,16 +98,27 @@ Options:
                         for the Python analysis layer)
   --from <node>         Origin, by name or id (route)
   --to <node>           Destination, by name or id (route)
-  --battery <kwh>       Battery capacity (route)  [60]
-  --soc <kwh>           Starting charge (route)  [20% of battery]
+  --battery <kwh>       Battery capacity (route)  [60; trucks: 12 hours]
+  --soc <kwh>           Starting charge (route)  [20% of battery; trucks: full]
+                        (--capacity and --level are domain-neutral synonyms)
+  --reserve <fraction>  Share of capacity to keep in hand at the destination
+                        [0.10 for EVs; 0 for trucks, which the law lets finish
+                        with no work time left]
   --vot <dollars>       Value of time per hour  [20.00]
   --travel-cost <rate>  Dollars per km  [0.28]
-  --site-price <rate>   Price per kWh at the hypothetical station (site)  [0.45]
+  --site-price <rate>   Price per kWh at the hypothetical station (site)  [0.45; trucks: 0]
   --site-chargers <n>   Chargers at the hypothetical station (site)  [4]
+                        (bays, for a truck rest area)
   --site-power <kw>     Power of the hypothetical station (site)  [150]
   --top <n>             Sites to list; 0 for all (site)  [5]
   --verbose             Extra detail
   -h, --help            This message
+
+Domains:
+  A dataset directory may hold a domain.txt naming what its agents are:
+    ev     electric vehicles charging at stations that queue  (the default)
+    truck  heavy-vehicle drivers under standard hours, resting at bays that
+           turn arrivals away when full
 )";
 }
 
@@ -140,8 +155,9 @@ Options parse(int argc, char** argv) {
             else if (arg == "--format") options.format = next(i, "--format");
             else if (arg == "--from") options.from = next(i, "--from");
             else if (arg == "--to") options.to = next(i, "--to");
-            else if (arg == "--battery") options.battery = std::stod(next(i, "--battery"));
-            else if (arg == "--soc") options.soc = std::stod(next(i, "--soc"));
+            else if (arg == "--battery" || arg == "--capacity") options.battery = std::stod(next(i, "--capacity"));
+            else if (arg == "--soc" || arg == "--level") options.soc = std::stod(next(i, "--level"));
+            else if (arg == "--reserve") options.reserve = std::stod(next(i, "--reserve"));
             else if (arg == "--vot") options.valueOfTime = std::stod(next(i, "--vot"));
             else if (arg == "--travel-cost") options.travelCostPerKm = std::stod(next(i, "--travel-cost"));
             else if (arg == "--site-price") options.newStationPrice = std::stod(next(i, "--site-price"));
@@ -160,14 +176,47 @@ Options parse(int argc, char** argv) {
     return options;
 }
 
+/// The domain a dataset declares in <dir>/domain.txt: its first word, ignoring
+/// blank lines and `#` comments. No file means EV, which every dataset predating
+/// the file is.
+std::string readDomainManifest(const std::string& networkDir) {
+    std::ifstream in(networkDir + "/domain.txt");
+    std::string line;
+    while (std::getline(in, line)) {
+        std::istringstream words(line.substr(0, line.find('#')));
+        std::string word;
+        if (words >> word) return word;
+    }
+    return "ev";
+}
+
+bool isTruck(const Options& options) { return options.domain == "truck"; }
+
+/// Fill in whatever the user left to default, now that the domain is known.
+void resolveDomainDefaults(Options& options) {
+    options.domain = readDomainManifest(options.networkDir);
+    makeDomain(options.domain, options.speedKmh);  // reject an unknown name up front
+    if (options.reserve < 0.0) options.reserve = isTruck(options) ? 0.0 : SimulatorConfig{}.reserveFraction;
+    if (options.reserve >= 1.0) fail("--reserve must be a fraction below 1");
+    if (options.battery < 0.0) options.battery = isTruck(options) ? HeavyVehicleStandardHours::kMaxWorkHours : 60.0;
+    if (options.soc < 0.0) options.soc = isTruck(options) ? options.battery : options.battery * 0.2;
+    // State-maintained rest areas do not charge. An EV price left in place here
+    // would bill each hypothetical rest area's users ~$5 a stop, and tilt the
+    // siting comparison against every candidate by exactly that.
+    if (options.newStationPrice < 0.0) options.newStationPrice = isTruck(options) ? 0.0 : 0.45;
+}
+
 Network loadNetwork(const Options& options) {
-    return Network::load(options.networkDir + "/nodes.csv", options.networkDir + "/edges.csv");
+    Network network = Network::load(options.networkDir + "/nodes.csv", options.networkDir + "/edges.csv");
+    network.setDomain(makeDomain(options.domain, options.speedKmh));
+    return network;
 }
 
 SimulationConfig makeConfig(const Options& options) {
     SimulationConfig config;
     config.travelCostPerKm = options.travelCostPerKm;
     config.valueOfTimePerHour = options.valueOfTime;
+    config.reserveFraction = options.reserve;
     return config;
 }
 
@@ -177,6 +226,7 @@ SimulatorConfig makeSimulatorConfig(const Options& options) {
     config.valueOfTimePerHour = options.valueOfTime;
     config.speedKmh = options.speedKmh;
     config.stopOverheadHours = options.stopOverhead;
+    config.reserveFraction = options.reserve;
     return config;
 }
 
@@ -238,11 +288,17 @@ int cmdInspect(const Options& options) {
               << "  edges            " << edgeCount / 2 << " undirected\n"
               << "  total road length " << std::fixed << std::setprecision(1) << totalKm / 2.0 << " km\n"
               << "  stations         " << stations.size() << "\n"
-              << "  candidate sites  " << candidates.size() << "\n\n";
+              << "  candidate sites  " << candidates.size() << "\n";
+    if (isTruck(options)) {
+        std::cout << "  domain           truck -- heavy-vehicle standard hours; stations are rest\n"
+                     "                   areas whose bays turn trucks away when full\n";
+    }
+    std::cout << "\n";
 
+    const bool truck = isTruck(options);
     std::cout << std::left << std::setw(4) << "id" << std::setw(18) << "name" << std::setw(10) << "station"
-              << std::setw(12) << "$/kWh" << std::setw(11) << "chargers" << std::setw(9) << "kW"
-              << "degree\n";
+              << std::setw(12) << (truck ? "$/unit" : "$/kWh") << std::setw(11) << (truck ? "bays" : "chargers")
+              << std::setw(9) << (truck ? "rate" : "kW") << "degree\n";
     std::cout << std::string(68, '-') << "\n";
     for (const auto& node : network.nodes()) {
         std::cout << std::left << std::setw(4) << node.id << std::setw(18) << fit(node.name, 18) << std::setw(10)
@@ -276,6 +332,57 @@ int cmdInspect(const Options& options) {
 /// `--planner optimal` -- the planner this project exists to demonstrate -- was
 /// rejected here while working everywhere else. The README's own example did not
 /// run. It now dispatches on --engine like simulate, compare and site.
+// -------------------------------------------------------------------------
+// Route wording. Each domain reads its own plan: a car charges, a driver rests.
+// -------------------------------------------------------------------------
+
+/// A route query's agent. `consumption` defaults to the EV fleet's; a driver's
+/// is 1, since all of its driving time counts as work.
+Demand routeDemand(const Options& options, NodeId from, NodeId to) {
+    Demand demand;
+    demand.id = 1;
+    demand.origin = from;
+    demand.destination = to;
+    demand.capacity = options.battery;
+    demand.level = options.soc;
+    if (isTruck(options)) demand.consumption = 1.0;
+    if (demand.level > demand.capacity) fail("--soc cannot exceed --battery");
+    return demand;
+}
+
+void printPlanHeading(const Options& options, const Network& network, const Demand& demand,
+                      const std::string& chooser) {
+    const Km range = network.domain().distanceOnResource(demand.level, demand.consumption);
+    if (isTruck(options)) {
+        std::cout << "Rest plan (" << chooser << ", " << std::setprecision(1) << demand.capacity
+                  << "h of work allowed, " << demand.level << "h left -> range " << std::setprecision(0)
+                  << range << " km)\n";
+        return;
+    }
+    std::cout << "Charging plan (" << chooser << ", battery " << std::setprecision(0) << demand.capacity
+              << " kWh, starting charge " << demand.level << " kWh -> range " << std::setprecision(0)
+              << range << " km)\n";
+}
+
+void printPlanStop(const Options& options, const Network& network, std::size_t index, const Stop& stop) {
+    std::cout << "  " << (index + 1) << ". " << network.node(stop.node).name;
+    if (isTruck(options)) {
+        std::cout << " -- rest " << hoursText(stop.serviceHours) << ", wait " << hoursText(stop.waitHours)
+                  << ", leaving with " << std::fixed << std::setprecision(1) << stop.levelAfter
+                  << "h of work\n";
+        return;
+    }
+    std::cout << " -- take " << std::fixed << std::setprecision(1) << stop.amount << " kWh for "
+              << money(stop.energyCost) << ", wait " << hoursText(stop.waitHours) << ", charge "
+              << hoursText(stop.serviceHours) << "\n";
+}
+
+const char* noStopNeeded(const Options& options) {
+    return isTruck(options) ? "  no rest needed\n" : "  no charging needed\n";
+}
+
+const char* stopCostLabel(const Options& options) { return isTruck(options) ? "  parking " : "  energy "; }
+
 int cmdRouteEvents(const Options& options) {
     const Network network = loadNetwork(options);
     const Router router(network);
@@ -298,13 +405,7 @@ int cmdRouteEvents(const Options& options) {
     }
     std::cout << "\n\n";
 
-    Demand demand;
-    demand.id = 1;
-    demand.origin = from;
-    demand.destination = to;
-    demand.capacity = options.battery;
-    demand.level = options.soc >= 0.0 ? options.soc : options.battery * 0.2;
-    if (demand.level > demand.capacity) fail("--soc cannot exceed --battery");
+    const Demand demand = routeDemand(options, from, to);
 
     const SimulatorConfig config = makeSimulatorConfig(options);
     const auto planner = makePlanner(options.policy, network, router,
@@ -314,27 +415,18 @@ int cmdRouteEvents(const Options& options) {
     const auto trips = simulator.run({demand}, *planner, runtime);
     const TimedTrip& trip = trips.front();
 
-    std::cout << "Charging plan (planner: " << planner->name() << ", battery "
-              << std::setprecision(0) << demand.capacity << " kWh, starting charge "
-              << demand.level << " kWh -> range " << std::setprecision(0) << network.domain().distanceOnResource(demand.level, demand.consumption)
-              << " km)\n";
+    printPlanHeading(options, network, demand, "planner: " + planner->name());
     if (!trip.completed) {
         std::cout << "  INCOMPLETE: " << trip.failure << "\n";
         return 1;
     }
     if (trip.stops.empty()) {
-        std::cout << "  no charging needed\n";
+        std::cout << noStopNeeded(options);
     } else {
-        for (std::size_t i = 0; i < trip.stops.size(); ++i) {
-            const auto& stop = trip.stops[i];
-            std::cout << "  " << (i + 1) << ". " << network.node(stop.node).name << " -- take "
-                      << std::fixed << std::setprecision(1) << stop.amount << " kWh for "
-                      << money(stop.energyCost) << ", wait " << hoursText(stop.waitHours)
-                      << ", charge " << hoursText(stop.serviceHours) << "\n";
-        }
+        for (std::size_t i = 0; i < trip.stops.size(); ++i) printPlanStop(options, network, i, trip.stops[i]);
     }
     std::cout << "  distance " << std::setprecision(1) << trip.distanceKm << " km"
-              << "  travel " << money(trip.travelCost) << "  energy " << money(trip.energyCost)
+              << "  travel " << money(trip.travelCost) << stopCostLabel(options) << money(trip.energyCost)
               << "  driving " << hoursText(trip.drivingHours) << "\n"
               << "  generalised cost " << money(trip.generalisedCost(options.valueOfTime))
               << " (time valued at " << money(options.valueOfTime) << "/h)\n";
@@ -362,39 +454,25 @@ int cmdRouteStatic(const Options& options) {
     }
     std::cout << "\n\n";
 
-    Demand demand;
-    demand.id = 1;
-    demand.origin = from;
-    demand.destination = to;
-    demand.capacity = options.battery;
-    demand.level = options.soc >= 0.0 ? options.soc : options.battery * 0.2;
-    if (demand.level > demand.capacity) fail("--soc cannot exceed --battery");
+    const Demand demand = routeDemand(options, from, to);
 
     const Allocator allocator(network, router, makeConfig(options));
     const auto policy = makePolicy(options.policy, options.valueOfTime);
     StationState state(network);
     const TripResult result = allocator.runOne(demand, *policy, state);
 
-    std::cout << "Charging plan (policy: " << policy->name() << ", battery " << std::setprecision(0)
-              << demand.capacity << " kWh, starting charge " << demand.level << " kWh -> range "
-              << std::setprecision(0) << network.domain().distanceOnResource(demand.level, demand.consumption) << " km)\n";
+    printPlanHeading(options, network, demand, "policy: " + policy->name());
     if (!result.completed) {
         std::cout << "  INCOMPLETE: " << result.failure << "\n";
         return 1;
     }
     if (result.stops.empty()) {
-        std::cout << "  no charging needed\n";
+        std::cout << noStopNeeded(options);
     } else {
-        for (std::size_t i = 0; i < result.stops.size(); ++i) {
-            const auto& stop = result.stops[i];
-            std::cout << "  " << (i + 1) << ". " << network.node(stop.node).name << " -- take "
-                      << std::fixed << std::setprecision(1) << stop.amount << " kWh for "
-                      << money(stop.energyCost) << ", wait " << hoursText(stop.waitHours) << ", charge "
-                      << hoursText(stop.serviceHours) << "\n";
-        }
+        for (std::size_t i = 0; i < result.stops.size(); ++i) printPlanStop(options, network, i, result.stops[i]);
     }
     std::cout << "  distance " << std::setprecision(1) << result.distanceKm << " km"
-              << "  travel " << money(result.travelCost) << "  energy " << money(result.energyCost)
+              << "  travel " << money(result.travelCost) << stopCostLabel(options) << money(result.energyCost)
               << "  time " << hoursText(result.timeHours()) << "\n"
               << "  generalised cost " << money(result.generalisedCost(options.valueOfTime))
               << " (time valued at " << money(options.valueOfTime) << "/h)\n";
@@ -441,20 +519,28 @@ void printSummaryRow(const Summary& summary) {
 // Event-driven reporting
 // -------------------------------------------------------------------------
 
-void printTimedHeader() {
+/// Refusals are only possible where stations turn arrivals away, so only there
+/// does the column exist -- an EV table keeps its exact shape.
+bool reportsTurnAways(const Network& network) { return network.domain().admission() == Admission::TurnAway; }
+
+void printTimedHeader(bool turnAways = false) {
     std::cout << std::left << std::setw(14) << "planner" << std::right << std::setw(10) << "completed"
-              << std::setw(10) << "stranded" << std::setw(12) << "mean $" << std::setw(12) << "mean wait"
+              << std::setw(10) << "stranded";
+    if (turnAways) std::cout << std::setw(12) << "turned away";
+    std::cout << std::setw(12) << "mean $" << std::setw(12) << "mean wait"
               << std::setw(11) << "p95 wait" << std::setw(11) << "max wait" << std::setw(13)
               << "mean gen $" << std::setw(8) << "stops" << std::setw(11) << "elapsed"
               << std::setw(8) << "peak Q" << std::setw(8) << "util" << "  busiest\n";
-    std::cout << std::string(128, '-') << "\n";
+    std::cout << std::string(turnAways ? 140 : 128, '-') << "\n";
 }
 
-void printTimedRow(const TimedSummary& s) {
+void printTimedRow(const TimedSummary& s, bool turnAways = false) {
     std::ostringstream util;
     util << std::fixed << std::setprecision(0) << s.peakUtilisation * 100.0 << "%";
     std::cout << std::left << std::setw(14) << s.planner << std::right << std::setw(10) << s.completed
-              << std::setw(10) << s.stranded << std::setw(12) << money(s.meanMoneyCost)
+              << std::setw(10) << s.stranded;
+    if (turnAways) std::cout << std::setw(12) << s.turnedAway;
+    std::cout << std::setw(12) << money(s.meanMoneyCost)
               << std::setw(12) << hoursText(s.meanWaitHours) << std::setw(11)
               << hoursText(s.p95WaitHours) << std::setw(11) << hoursText(s.maxWaitHours)
               << std::setw(13) << money(s.meanGeneralisedCost) << std::setw(8) << std::fixed
@@ -526,8 +612,8 @@ int cmdSimulateEvents(const Options& options) {
 
     std::cout << "Fleet of " << demands.size() << " over " << options.networkDir
               << " (event-driven, " << static_cast<int>(options.speedKmh) << " km/h)\n\n";
-    printTimedHeader();
-    printTimedRow(summary);
+    printTimedHeader(reportsTurnAways(network));
+    printTimedRow(summary, reportsTurnAways(network));
 
     const Hours horizon = options.horizon > 0.0 ? options.horizon : summary.makespan;
     std::cout << "\nStation load over " << std::fixed << std::setprecision(1) << horizon
@@ -586,14 +672,16 @@ int cmdCompareEvents(const Options& options) {
     const Simulator simulator(network, router, config);
 
     const bool asCsv = options.format == "csv";
+    const bool turnAways = reportsTurnAways(network);
     if (asCsv) {
-        std::cout << "planner,demands,completed,stranded,mean_money,mean_wait_h,p95_wait_h,"
+        std::cout << "planner,demands,completed,stranded," << (turnAways ? "turned_away," : "")
+                  << "mean_money,mean_wait_h,p95_wait_h,"
                      "max_wait_h,mean_generalised,mean_stops,mean_elapsed_h,peak_waiting,"
                      "peak_utilisation,busiest_station\n";
     } else {
         std::cout << "Fleet of " << demands.size() << " over " << options.networkDir
                   << ", event-driven, time valued at " << money(options.valueOfTime) << "/h\n\n";
-        printTimedHeader();
+        printTimedHeader(turnAways);
     }
 
     std::map<std::string, TimedSummary> summaries;
@@ -606,7 +694,9 @@ int cmdCompareEvents(const Options& options) {
         summaries.emplace(name, summary);
         if (asCsv) {
             std::cout << summary.planner << "," << summary.demands << "," << summary.completed << ","
-                      << summary.stranded << "," << std::fixed << std::setprecision(4)
+                      << summary.stranded << ",";
+            if (turnAways) std::cout << summary.turnedAway << ",";
+            std::cout << std::fixed << std::setprecision(4)
                       << summary.meanMoneyCost << "," << summary.meanWaitHours << ","
                       << summary.p95WaitHours << "," << summary.maxWaitHours << ","
                       << summary.meanGeneralisedCost << "," << summary.meanStops << ","
@@ -614,7 +704,7 @@ int cmdCompareEvents(const Options& options) {
                       << summary.peakUtilisation << "," << csv::escape(summary.busiestStation)
                       << "\n";
         } else {
-            printTimedRow(summary);
+            printTimedRow(summary, turnAways);
         }
     }
     if (asCsv) return 0;
@@ -750,9 +840,16 @@ Station sitePrototype(const Options& options) {
 
 void printSiteHeading(const Options& options, const Station& prototype, std::size_t fleet,
                       const std::string& plannerName) {
-    std::cout << "Siting a new station (" << prototype.servers << " chargers, "
-              << static_cast<int>(prototype.ratePerHour) << " kW, " << money(prototype.pricePerUnit)
-              << "/kWh) for a fleet of " << fleet << "\n"
+    if (isTruck(options)) {
+        std::cout << "Siting a new rest area (" << prototype.servers << " truck bays, "
+                  << (prototype.pricePerUnit == 0.0 ? std::string("free") : money(prototype.pricePerUnit) + "/h")
+                  << ") for a fleet of " << fleet << "\n";
+    } else {
+        std::cout << "Siting a new station (" << prototype.servers << " chargers, "
+                  << static_cast<int>(prototype.ratePerHour) << " kW, " << money(prototype.pricePerUnit)
+                  << "/kWh) for a fleet of " << fleet << "\n";
+    }
+    std::cout
               << (options.engine == "events" ? "Engine: event-driven clock at "
                                             : "Engine: static tally (no clock), ")
               << (options.engine == "events" ? std::to_string(static_cast<int>(options.speedKmh)) +
@@ -829,8 +926,9 @@ int cmdSiteEvents(const Options& options) {
 }  // namespace
 
 int main(int argc, char** argv) {
-    const Options options = parse(argc, argv);
+    Options options = parse(argc, argv);
     try {
+        resolveDomainDefaults(options);
         if (options.command == "inspect") return cmdInspect(options);
         if (options.command == "route") {
             if (options.engine == "events") return cmdRouteEvents(options);

@@ -53,4 +53,14 @@ std::shared_ptr<const Domain> electricVehicle() {
     return instance;
 }
 
+std::vector<std::string> domainNames() { return {"ev", "truck"}; }
+
+std::shared_ptr<const Domain> makeDomain(const std::string& name, double speedKmh) {
+    if (name == "ev") return electricVehicle();
+    if (name == "truck") return std::make_shared<HeavyVehicleStandardHours>(speedKmh);
+    std::string known;
+    for (const auto& n : domainNames()) known += (known.empty() ? "" : ", ") + n;
+    throw std::invalid_argument("unknown domain '" + name + "' (expected one of: " + known + ")");
+}
+
 }  // namespace evnet
