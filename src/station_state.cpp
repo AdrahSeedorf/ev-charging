@@ -20,10 +20,10 @@ Hours StationState::expectedWait(NodeId id, Hours /*arrivalTime*/) const {
     return expectedWait(id);
 }
 
-Hours StationState::serviceTime(NodeId id, Resource energy) const {
+Hours StationState::serviceTime(NodeId id, Resource amount) const {
     const Node& node = network_->node(id);
     if (!node.hasStation()) return 0.0;
-    return network_->domain().serviceDuration(energy, node.station->ratePerHour);
+    return network_->domain().serviceDuration(amount, node.station->ratePerHour);
 }
 
 int StationState::queueLength(NodeId id) const {

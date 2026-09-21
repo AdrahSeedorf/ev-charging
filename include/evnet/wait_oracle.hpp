@@ -5,7 +5,7 @@
 
 namespace evnet {
 
-/// How long will a agent wait, and how long will it charge?
+/// How long will an agent wait, and how long will it charge?
 ///
 /// This is the seam between the two simulation engines. The feasibility rules for
 /// a charging stop -- the progress guard, the onward-feasibility guard, the energy
@@ -18,7 +18,7 @@ namespace evnet {
 ///     against that project meaningful.
 ///
 ///   * StationRuntime (stage 2) knows when every charger next frees up, so it can
-///     answer the question properly: a agent arriving at 09:30 waits until a
+///     answer the question properly: an agent arriving at 09:30 waits until a
 ///     charger is actually available.
 ///
 /// Abstracting this lets one candidate builder serve both.
@@ -26,12 +26,12 @@ class WaitOracle {
 public:
     virtual ~WaitOracle() = default;
 
-    /// Expected queueing delay for a agent reaching `node` at `arrivalTime`.
+    /// Expected queueing delay for an agent reaching `node` at `arrivalTime`.
     /// Implementations that do not model time ignore the second argument.
     virtual Hours expectedWait(NodeId node, Hours arrivalTime) const = 0;
 
     /// Time to transfer `energy` once plugged in.
-    virtual Hours serviceTime(NodeId node, Resource energy) const = 0;
+    virtual Hours serviceTime(NodeId node, Resource amount) const = 0;
 };
 
 }  // namespace evnet

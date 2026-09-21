@@ -31,7 +31,7 @@ struct ServiceRecord {
 /// results. Here a charger is occupied for a computed duration and then released.
 ///
 /// DESIGN NOTE -- why there are no queue events.
-/// A agent wanting to charge is assigned the charger that frees up soonest, and
+/// An agent wanting to charge is assigned the charger that frees up soonest, and
 /// begins at max(its arrival, that charger's free time). Because the simulator
 /// processes arrivals in nondecreasing time order, this is provably equivalent to
 /// a single station-wide FIFO queue: an earlier arrival is always assigned first
@@ -45,15 +45,15 @@ public:
     /// rather than a bookkeeping entry.
     explicit StationRuntime(const Network& network, Hours stopOverheadHours = 0.1);
 
-    /// Estimated queueing delay for a agent reaching `node` at `arrivalTime`,
+    /// Estimated queueing delay for an agent reaching `node` at `arrivalTime`,
     /// given everything committed so far. This is what planners consult; unlike
     /// stage 1's estimate it actually depends on when the agent turns up.
     Hours expectedWait(NodeId node, Hours arrivalTime) const override;
-    Hours serviceTime(NodeId node, Resource energy) const override;
+    Hours serviceTime(NodeId node, Resource amount) const override;
 
     /// Commit a charging session and return its measured record. Occupies the
     /// earliest-free charger from max(arrivalTime, that charger's free time).
-    ServiceRecord admit(NodeId node, int vehicleId, Hours arrivalTime, Resource energy);
+    ServiceRecord admit(NodeId node, int vehicleId, Hours arrivalTime, Resource amount);
 
     /// Vehicles that have arrived but not yet plugged in, at instant `t`.
     int waitingAt(NodeId node, Hours t) const;

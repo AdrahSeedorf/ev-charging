@@ -12,9 +12,9 @@ namespace evnet {
 ///
 /// This is the component that makes the merged model qualitatively different
 /// from the Sydney study it inherits its graph from. There, the answer for one
-/// vehicle was independent of every other vehicle -- a static optimisation with
-/// a fixed correct answer. Here, assigning a vehicle to a station makes that
-/// station worse for every vehicle behind it, so the fleet's outcome is emergent
+/// agent was independent of every other agent -- a static optimisation with
+/// a fixed correct answer. Here, assigning an agent to a station makes that
+/// station worse for every agent behind it, so the fleet's outcome is emergent
 /// rather than merely computed.
 ///
 /// KNOWN LIMITATION (stage 1): arrivals accumulate and never depart, so
@@ -27,7 +27,7 @@ namespace evnet {
 /// vehicles occupy a charger for a duration and then release it.
 class StationState : public WaitOracle {
 public:
-    /// Half an hour of queueing per vehicle already waiting per charger. Carried
+    /// Half an hour of queueing per agent already waiting per charger. Carried
     /// over verbatim from the legacy corridor project so the two are comparable.
     static constexpr Hours kHoursPerQueuedVehicle = 0.5;
 
@@ -41,7 +41,7 @@ public:
     Hours expectedWait(NodeId id, Hours arrivalTime) const override;
 
     /// Time to actually deliver `energy` once plugged in.
-    Hours serviceTime(NodeId id, Resource energy) const override;
+    Hours serviceTime(NodeId id, Resource amount) const override;
 
     int queueLength(NodeId id) const;
     void enqueue(NodeId id);

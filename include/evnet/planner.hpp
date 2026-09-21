@@ -13,7 +13,7 @@
 
 namespace evnet {
 
-/// What a agent should do next.
+/// What an agent should do next.
 struct Action {
     enum class Kind {
         DriveToDestination,  ///< enough charge to finish
@@ -29,17 +29,17 @@ struct Action {
 
     static Action driveToDestination() { return {Kind::DriveToDestination, kNoNode, 0.0, {}}; }
     static Action driveTo(NodeId node) { return {Kind::DriveToStation, node, 0.0, {}}; }
-    static Action serviceHere(Resource energy) { return {Kind::ServiceHere, kNoNode, energy, {}}; }
+    static Action serviceHere(Resource amount) { return {Kind::ServiceHere, kNoNode, amount, {}}; }
     static Action infeasible(std::string why) {
         return {Kind::Infeasible, kNoNode, 0.0, std::move(why)};
     }
 };
 
-/// Decides a agent's next move.
+/// Decides an agent's next move.
 ///
-/// Called afresh every time a agent reaches a node, so every planner here is
+/// Called afresh every time an agent reaches a node, so every planner here is
 /// receding-horizon: it commits only to the next step and reconsiders on arrival
-/// with whatever congestion has actually materialised. That is what lets a agent
+/// with whatever congestion has actually materialised. That is what lets an agent
 /// change its mind when the station it was heading for turns out to be busier than
 /// estimated.
 class Planner {

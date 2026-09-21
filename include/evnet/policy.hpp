@@ -21,8 +21,8 @@ struct Candidate {
     Km progressKm{0.0};     ///< reduction in remaining distance to destination
     Resource amount{0.0};     ///< energy to be taken on here
     /// State of charge on departure. Carried explicitly rather than recomputed by
-    /// the caller as (soc - travel + charge): that round trip through subtraction
-    /// and re-addition loses the low bits, which was enough to leave a agent
+    /// the caller as (level - travel + charge): that round trip through subtraction
+    /// and re-addition loses the low bits, which was enough to leave an agent
     /// needing exactly 70.3 kWh departing with 70.29999999999999 and then failing
     /// a later "can I finish" test by a rounding error.
     Resource levelAfter{0.0};

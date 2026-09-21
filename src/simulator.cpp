@@ -23,10 +23,10 @@ struct Event {
     }
 };
 
-/// A agent in flight.
+/// An agent in flight.
 struct Runner {
     NodeId at{kNoNode};
-    Resource soc{0.0};
+    Resource level{0.0};
     int steps{0};
     bool done{false};
     TimedTrip trip;
@@ -49,7 +49,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
         const Demand& demand = demands[i];
         Runner& runner = runners[i];
         runner.at = demand.origin;
-        runner.soc = demand.level;
+        runner.level = demand.level;
         runner.trip.demandId = demand.id;
         runner.trip.releaseTime = demand.releaseHour;
         runner.trip.finishTime = demand.releaseHour;
@@ -81,7 +81,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
         agent.id = demand.id;
         agent.at = runner.at;
         agent.destination = demand.destination;
-        agent.level = runner.soc;
+        agent.level = runner.level;
         agent.capacity = demand.capacity;
         agent.consumption = demand.consumption;
         agent.now = event.time;
@@ -125,12 +125,12 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
             case Action::Kind::DriveToDestination: {
                 const Km leg = router_->distance(runner.at, demand.destination);
                 const Hours travel = drivingTime(leg, config_.speedKmh);
-                runner.soc -= network_->domain().resourceForDistance(leg, demand.consumption);
+                runner.level -= network_->domain().resourceForDistance(leg, demand.consumption);
                 runner.trip.distanceKm += leg;
                 runner.trip.drivingHours += travel;
                 runner.trip.travelCost = runner.trip.distanceKm * config_.travelCostPerKm;
                 runner.trip.finishTime = event.time + travel;
-                runner.trip.levelAtFinish = runner.soc;
+                runner.trip.levelAtFinish = runner.level;
                 runner.trip.completed = true;
                 runner.done = true;
                 break;
@@ -144,7 +144,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                     break;
                 }
                 const Hours travel = drivingTime(leg, config_.speedKmh);
-                runner.soc -= network_->domain().resourceForDistance(leg, demand.consumption);
+                runner.level -= network_->domain().resourceForDistance(leg, demand.consumption);
                 runner.trip.distanceKm += leg;
                 runner.trip.drivingHours += travel;
                 runner.at = action.target;
@@ -163,7 +163,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                 const ServiceRecord record =
                     runtime.admit(runner.at, demand.id, event.time, action.amount);
 
-                runner.soc = std::min(demand.capacity, runner.soc + action.amount);
+                runner.level = std::min(demand.capacity, runner.level + action.amount);
                 const Dollars cost = action.amount * node.station->pricePerUnit;
                 runner.trip.stops.push_back(Stop{runner.at, action.amount, cost, record.wait(),
                                                  record.service()});

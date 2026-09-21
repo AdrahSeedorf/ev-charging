@@ -11,11 +11,11 @@ namespace evnet {
 namespace {
 
 /// Slack for "do I have enough charge" comparisons. Energy figures are derived
-/// through several multiplications and divisions, so a vehicle that mathematically
+/// through several multiplications and divisions, so an agent that mathematically
 /// has exactly enough can land a fraction of a microjoule short. Without this
-/// tolerance such a vehicle is declared stranded, which is a rounding artefact
+/// tolerance such an agent is declared stranded, which is a rounding artefact
 /// rather than a transport outcome.
-constexpr Resource kEnergyEpsilon = 1e-6;
+constexpr Resource kResourceEpsilon = 1e-6;
 
 }  // namespace
 
@@ -67,19 +67,19 @@ std::vector<Candidate> Allocator::candidatesFor(NodeId at,
     // having two copies drifting apart would be the likeliest source of a silent
     // bug, so the static and event-driven engines share one implementation and
     // differ only in how they answer the congestion question.
-    AgentState vehicle;
-    vehicle.at = at;
-    vehicle.destination = destination;
-    vehicle.level = level;
-    vehicle.capacity = capacity;
-    vehicle.consumption = consumption;
-    vehicle.now = 0.0;  // this engine has no clock
+    AgentState agent;
+    agent.at = at;
+    agent.destination = destination;
+    agent.level = level;
+    agent.capacity = capacity;
+    agent.consumption = consumption;
+    agent.now = 0.0;  // this engine has no clock
 
     FeasibilityConfig feasibility;
     feasibility.travelCostPerKm = config_.travelCostPerKm;
     feasibility.reserveFraction = config_.reserveFraction;
 
-    return buildCandidates(*network_, *router_, state, vehicle, feasibility);
+    return buildCandidates(*network_, *router_, state, agent, feasibility);
 }
 
 TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, StationState& state) const {
@@ -92,7 +92,7 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
     }
 
     NodeId at = demand.origin;
-    Resource soc = demand.level;
+    Resource level = demand.level;
 
     for (int stop = 0; stop <= config_.maxStopsPerTrip; ++stop) {
         const Km remaining = router_->distance(at, demand.destination);
@@ -104,14 +104,14 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
         // Can we finish from here, keeping the reserve intact?
         const Resource needed =
             network_->domain().resourceForDistance(remaining, demand.consumption) + demand.capacity * config_.reserveFraction;
-        if (soc + kEnergyEpsilon >= needed || remaining == 0.0) {
+        if (level + kResourceEpsilon >= needed || remaining == 0.0) {
             result.distanceKm += remaining;
             result.travelCost = result.distanceKm * config_.travelCostPerKm;
             result.completed = true;
             return result;
         }
 
-        const auto candidates = candidatesFor(at, demand.destination, soc, demand.capacity,
+        const auto candidates = candidatesFor(at, demand.destination, level, demand.capacity,
                                               demand.consumption, state);
         if (candidates.empty()) {
             result.failure = "stranded at " + network_->node(at).name +
@@ -128,7 +128,7 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
         // Drive to the chosen station, then charge. The resulting state of charge
         // is taken from the candidate rather than recomputed here, so it is exact.
         result.distanceKm += chosen->detourKm;
-        soc = std::min(demand.capacity, chosen->levelAfter);
+        level = std::min(demand.capacity, chosen->levelAfter);
 
         state.enqueue(chosen->node);
         result.stops.push_back(Stop{chosen->node, chosen->amount, chosen->energyCost,
@@ -153,21 +153,21 @@ TripResult Allocator::runTopUp(const Demand& demand, const Policy& policy, Stati
         return result;
     }
 
-    AgentState vehicle;
-    vehicle.id = demand.id;
-    vehicle.at = demand.origin;
-    vehicle.destination = demand.origin;
-    vehicle.level = demand.level;
-    vehicle.capacity = demand.capacity;
-    vehicle.consumption = demand.consumption;
-    vehicle.now = 0.0;
+    AgentState agent;
+    agent.id = demand.id;
+    agent.at = demand.origin;
+    agent.destination = demand.origin;
+    agent.level = demand.level;
+    agent.capacity = demand.capacity;
+    agent.consumption = demand.consumption;
+    agent.now = 0.0;
 
     FeasibilityConfig feasibility;
     feasibility.travelCostPerKm = config_.travelCostPerKm;
     feasibility.reserveFraction = config_.reserveFraction;
 
     const auto candidates =
-        buildTopUpCandidates(*network_, *router_, state, vehicle, demand.requiredAmount, feasibility);
+        buildTopUpCandidates(*network_, *router_, state, agent, demand.requiredAmount, feasibility);
 
     if (candidates.empty()) {
         result.failure = "no reachable charging station can serve a " +

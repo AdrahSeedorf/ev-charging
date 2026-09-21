@@ -47,7 +47,7 @@ public:
     /// Ranked best-first. `prototype` is the station to hypothetically install
     /// (price, charger count, power). `topN == 0` returns every candidate.
     ///
-    /// STATIC ENGINE -- stage 1's timeless tally, kept for comparison. Every vehicle
+    /// STATIC ENGINE -- stage 1's timeless tally, kept for comparison. Every agent
     /// is walked to completion in isolation and each station it touches has a counter
     /// incremented, so the whole fleet is effectively simultaneous and the "waits" are
     /// an index rather than a duration. On a 62-station metro network this reported a

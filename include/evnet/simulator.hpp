@@ -100,12 +100,12 @@ struct SimulatorConfig {
 /// real hours on the road, occupy a charger for a computed duration and then free
 /// it. Waits are what the simulation measured, not what a formula guessed.
 ///
-/// There is exactly one event type -- a agent reaching a node -- because charger
+/// There is exactly one event type -- an agent reaching a node -- because charger
 /// admission is resolved synchronously against the earliest-free charger. See the
 /// FIFO-equivalence argument on StationRuntime for why that is exact rather than an
 /// approximation.
 ///
-/// Vehicles replan on every arrival, so a agent heading for a station that turns
+/// Vehicles replan on every arrival, so an agent heading for a station that turns
 /// out to be busier than estimated can change its mind en route.
 class Simulator {
 public:

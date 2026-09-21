@@ -56,30 +56,30 @@ std::vector<Candidate> buildCandidates(const Network& network,
         }
         if (!onwardOk) continue;
 
-        const Resource socOnArrival = agent.level - domain.resourceForDistance(detour, agent.consumption);
-        if (socOnArrival < 0.0) continue;  // defensive; reachableWithin should prevent this
+        const Resource levelOnArrival = agent.level - domain.resourceForDistance(detour, agent.consumption);
+        if (levelOnArrival < 0.0) continue;  // defensive; reachableWithin should prevent this
 
-        const Resource energyToFinish = domain.resourceForDistance(remainingAfter, agent.consumption) +
+        const Resource neededToFinish = domain.resourceForDistance(remainingAfter, agent.consumption) +
                                    agent.capacity * config.reserveFraction;
-        const Resource target = std::min(agent.capacity, energyToFinish);
-        const Resource energy = target - socOnArrival;
-        if (energy <= kNegligibleAmount) continue;
+        const Resource target = std::min(agent.capacity, neededToFinish);
+        const Resource amount = target - levelOnArrival;
+        if (amount <= kNegligibleAmount) continue;
 
         Candidate candidate;
         candidate.node = candidateNode;
         candidate.detourKm = detour;
         candidate.progressKm = distanceToDestination - remainingAfter;
-        candidate.amount = energy;
+        candidate.amount = amount;
         candidate.levelAfter = target;
         candidate.travelCost = detour * config.travelCostPerKm;
-        candidate.energyCost = energy * node.station->pricePerUnit;
+        candidate.energyCost = amount * node.station->pricePerUnit;
         // The wait is estimated for when the agent would actually ARRIVE, not
         // for the moment the decision is taken. With a timeless oracle this makes
         // no difference; with a clock it is the difference between a useful
         // estimate and a stale one.
         const Hours arrivalTime = agent.now + drivingTime(detour, config.speedKmh);
         candidate.waitHours = oracle.expectedWait(candidateNode, arrivalTime);
-        candidate.serviceHours = oracle.serviceTime(candidateNode, energy);
+        candidate.serviceHours = oracle.serviceTime(candidateNode, amount);
         candidates.push_back(candidate);
     }
 
@@ -106,15 +106,15 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
         const Km distance =
             candidateNode == agent.at ? 0.0 : router.distance(agent.at, candidateNode);
         const Resource outbound = domain.resourceForDistance(distance, agent.consumption);
-        const Resource socOnArrival = agent.level - outbound;
-        if (socOnArrival < 0.0) continue;
+        const Resource levelOnArrival = agent.level - outbound;
+        if (levelOnArrival < 0.0) continue;
 
         // The agent charges on arrival, so the return leg is funded by the
         // top-up. It still has to have enough left to get home.
-        const Resource afterCharging = std::min(agent.capacity, socOnArrival + requiredAmount);
+        const Resource afterCharging = std::min(agent.capacity, levelOnArrival + requiredAmount);
         if (afterCharging < outbound) continue;
 
-        const Resource delivered = afterCharging - socOnArrival;
+        const Resource delivered = afterCharging - levelOnArrival;
         if (delivered <= kNegligibleAmount) continue;
 
         Candidate candidate;

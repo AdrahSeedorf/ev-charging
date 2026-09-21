@@ -194,7 +194,7 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
             if (burnLevels > level) continue;
             const std::size_t remaining = level - burnLevels;
 
-            // The reserve exists so a agent is never stranded between servers, so
+            // The reserve exists so an agent is never stranded between servers, so
             // it is required on arrival at a plain waypoint but not at a station --
             // rolling into a charger nearly empty is the entire point of the charger.
             //
@@ -213,10 +213,10 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
         // Transition 2: charge here, to any higher level.
         if (couldChargeHere) {
             for (std::size_t target = level + 1; target < levelCount; ++target) {
-                const Resource energy = static_cast<double>(target - level) * step;
+                const Resource amount = static_cast<double>(target - level) * step;
                 const Hours duration =
-                    config_.stopOverheadHours + network_->domain().serviceDuration(energy, here.station->ratePerHour);
-                const Dollars added = energy * here.station->pricePerUnit +
+                    config_.stopOverheadHours + network_->domain().serviceDuration(amount, here.station->ratePerHour);
+                const Dollars added = amount * here.station->pricePerUnit +
                                       (waitAt[node] + duration) * valueOfTime_;
                 relax(index(node, target), added, Move::Charge);
             }
@@ -282,10 +282,10 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
         // The grid amount exceeding the exact requirement by more than one level is
         // what separates the second case from rounding noise in the first.
         const bool bulkBuying = gridEnergy > exactEnergy + step;
-        Resource energy = bulkBuying ? gridEnergy : exactEnergy;
-        if (energy <= kResourceEpsilon) energy = gridEnergy;
+        Resource amount = bulkBuying ? gridEnergy : exactEnergy;
+        if (amount <= kResourceEpsilon) amount = gridEnergy;
 
-        plan.first = Action::serviceHere(energy);
+        plan.first = Action::serviceHere(amount);
         return plan;
     }
 

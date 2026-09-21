@@ -16,7 +16,7 @@ struct FeasibilityConfig {
     double reserveFraction{0.10};  ///< arrive with this fraction of the battery in hand
     /// Average road speed, used to convert distance into elapsed time. Stage 1 had
     /// no clock so this went unused there; the event-driven engine needs it to know
-    /// *when* a agent turns up at a candidate station, which is what makes a
+    /// *when* an agent turns up at a candidate station, which is what makes a
     /// time-dependent wait estimate possible.
     double speedKmh{80.0};
     /// Fixed time cost of a charging session, on top of the energy transfer:
@@ -31,7 +31,7 @@ struct FeasibilityConfig {
     Hours stopOverheadHours{0.1};
 };
 
-/// A agent's situation at the moment a charging decision is needed.
+/// An agent's situation at the moment a charging decision is needed.
 struct AgentState {
     int id{0};
     NodeId at{kNoNode};
@@ -43,7 +43,7 @@ struct AgentState {
 
 };
 
-/// Enumerates the charging stops a agent may legally take next.
+/// Enumerates the charging stops an agent may legally take next.
 ///
 /// This is the single copy of the feasibility rules, shared by the static
 /// allocator and the discrete-event simulator. Both guards live here:
@@ -56,7 +56,7 @@ struct AgentState {
 ///
 ///   2. ONWARD FEASIBILITY -- once charged, the agent must be able to finish the
 ///      trip or reach a further station that is itself closer to the destination.
-///      The legacy corridor allocator omitted this, so it could send a agent to
+///      The legacy corridor allocator omitted this, so it could send an agent to
 ///      a low-queue town at the edge of its range and leave it stranded.
 ///
 /// `arrivalTimeAt` lets the caller tell the oracle when the agent would reach a
