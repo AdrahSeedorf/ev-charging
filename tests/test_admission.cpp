@@ -34,6 +34,9 @@ public:
     Km distanceOnResource(Resource r, PerDistance c) const override { return ev_->distanceOnResource(r, c); }
     Hours serviceDuration(Resource a, Rate r) const override { return ev_->serviceDuration(a, r); }
     Admission admission() const override { return Admission::TurnAway; }
+    Resource levelAfterService(Resource l, Resource r, Resource c) const override {
+        return ev_->levelAfterService(l, r, c);
+    }
 
 private:
     std::shared_ptr<const Domain> ev_ = electricVehicle();

@@ -18,10 +18,12 @@
 // second domain needed beyond them was a finding about the model and belonged
 // here rather than in an `if` somewhere in the planner.
 //
-// Trucking produced the first such finding: admission(). The EV model assumed,
+// Trucking produced two such findings. admission(): the EV model assumed,
 // without ever saying so, that a full station has somewhere to wait. Truck
 // parking does not, and that difference -- not how fast a clock drains -- is
-// what makes a parking shortage cost drivers their legal hours.
+// what makes a parking shortage cost drivers their legal hours. And
+// levelAfterService(): the EV model assumed an agent chooses how much service to
+// take. A driver's reset is all or nothing.
 
 namespace evnet {
 
@@ -60,6 +62,22 @@ public:
 
     /// What a full station does with an arrival. See Admission.
     virtual Admission admission() const = 0;
+
+    /// The level an agent leaves a station at, having arrived at
+    /// `levelOnArrival` and asked to be topped up to `requestedLevel`.
+    ///
+    /// For an EV this is simply what was asked for: you choose how much to
+    /// charge. Not every domain works that way -- a mandated rest resets a
+    /// driver's clock in full however little of it was used -- so the engine
+    /// asks, rather than assuming the request is what gets delivered.
+    ///
+    /// A level rather than an amount on purpose. The engine carries the level
+    /// after service explicitly instead of rebuilding it as arrival + amount,
+    /// because that round trip loses low bits: it once left a vehicle needing
+    /// exactly 70.3 kWh departing with 70.29999999999999, which then failed a
+    /// later can-I-finish check by a rounding error.
+    virtual Resource levelAfterService(Resource levelOnArrival, Resource requestedLevel,
+                                       Resource capacity) const = 0;
 };
 
 /// Charge in kWh, spent at a consumption in kWh/100km, delivered at a charger
@@ -73,6 +91,11 @@ public:
     Hours serviceDuration(Resource amount, Rate rate) const override;
     /// You wait for a charger.
     Admission admission() const override { return Admission::Queue; }
+    /// You charge to the level you chose.
+    Resource levelAfterService(Resource /*levelOnArrival*/, Resource requestedLevel,
+                               Resource /*capacity*/) const override {
+        return requestedLevel;
+    }
 };
 
 /// A shared, immutable EV domain. Domains are stateless, so one instance serves

@@ -61,9 +61,13 @@ std::vector<Candidate> buildCandidates(const Network& network,
 
         const Resource neededToFinish = domain.resourceForDistance(remainingAfter, agent.consumption) +
                                    agent.capacity * config.reserveFraction;
-        const Resource target = std::min(agent.capacity, neededToFinish);
+        const Resource wanted = std::min(agent.capacity, neededToFinish);
+        // Not worth stopping for is judged on what the agent wants, not on what the
+        // station would give it: a driver with hours in hand does not stop for a
+        // full reset merely because a reset is on offer.
+        if (wanted - levelOnArrival <= kNegligibleAmount) continue;
+        const Resource target = domain.levelAfterService(levelOnArrival, wanted, agent.capacity);
         const Resource amount = target - levelOnArrival;
-        if (amount <= kNegligibleAmount) continue;
 
         Candidate candidate;
         candidate.node = candidateNode;
@@ -112,7 +116,8 @@ std::vector<Candidate> buildTopUpCandidates(const Network& network,
 
         // The agent charges on arrival, so the return leg is funded by the
         // top-up. It still has to have enough left to get home.
-        const Resource afterCharging = std::min(agent.capacity, levelOnArrival + requiredAmount);
+        const Resource afterCharging = domain.levelAfterService(
+            levelOnArrival, std::min(agent.capacity, levelOnArrival + requiredAmount), agent.capacity);
         if (afterCharging < outbound) continue;
 
         const Resource delivered = afterCharging - levelOnArrival;

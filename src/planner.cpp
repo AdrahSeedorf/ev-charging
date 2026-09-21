@@ -216,10 +216,28 @@ OptimalPlanner::Plan OptimalPlanner::solve(const AgentState& agent,
             relax(index(static_cast<std::size_t>(edge.to), remaining), added, Move::Drive);
         }
 
-        // Transition 2: charge here, to any higher level.
+        // Transition 2: charge here, to any higher level -- or rather, ask to, and
+        // go wherever the domain says that request actually leaves the agent. For
+        // an EV that is the level asked for; for a driver's reset it is full, so
+        // every request collapses onto the same state and the search simply finds
+        // it more than once.
         if (couldChargeHere) {
-            for (std::size_t target = level + 1; target < levelCount; ++target) {
-                const Resource amount = static_cast<double>(target - level) * step;
+            const Resource arrivalLevel = static_cast<double>(level) * step;
+            for (std::size_t requested = level + 1; requested < levelCount; ++requested) {
+                const Resource requestedLevel = static_cast<double>(requested) * step;
+                const Resource after =
+                    network_->domain().levelAfterService(arrivalLevel, requestedLevel, agent.capacity);
+                // Where the domain grants the request exactly, keep the grid
+                // arithmetic this planner has always used, bit for bit. Otherwise
+                // snap DOWN onto the grid, for the same reason the start level is:
+                // never plan with more than the agent will actually have.
+                const std::size_t target =
+                    after == requestedLevel
+                        ? requested
+                        : std::min(levelCount - 1, static_cast<std::size_t>(std::floor(after / step + 1e-9)));
+                if (target <= level) continue;
+                const Resource amount = after == requestedLevel ? static_cast<double>(target - level) * step
+                                                                : after - arrivalLevel;
                 const Hours duration =
                     config_.stopOverheadHours + network_->domain().serviceDuration(amount, here.station->ratePerHour);
                 const Dollars added = amount * here.station->pricePerUnit +

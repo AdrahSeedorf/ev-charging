@@ -47,6 +47,9 @@ struct Stop {
     Dollars energyCost{0.0};
     Hours waitHours{0.0};
     Hours serviceHours{0.0};
+    /// Level on leaving the station. For an EV, charge in the battery; for a
+    /// driver, legal hours in hand after the rest.
+    Resource levelAfter{0.0};
 };
 
 struct TripResult {

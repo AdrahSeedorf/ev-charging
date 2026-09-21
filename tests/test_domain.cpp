@@ -100,6 +100,9 @@ public:
     }
     Hours serviceDuration(Resource a, Rate r) const override { return ev_->serviceDuration(a, r / k_); }
     Admission admission() const override { return ev_->admission(); }
+    Resource levelAfterService(Resource l, Resource r, Resource c) const override {
+        return ev_->levelAfterService(l, r, c);
+    }
 
 private:
     double k_;

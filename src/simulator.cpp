@@ -115,7 +115,7 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                                                        event.time + outboundTime, chosen->amount);
 
             runner.trip.stops.push_back(Stop{chosen->node, chosen->amount, chosen->energyCost,
-                                             record.wait(), record.service()});
+                                             record.wait(), record.service(), chosen->levelAfter});
             runner.trip.distanceKm = 2.0 * chosen->detourKm;
             runner.trip.travelCost = chosen->travelCost;
             runner.trip.energyCost = chosen->energyCost;
@@ -170,13 +170,21 @@ std::vector<TimedTrip> Simulator::run(const std::vector<Demand>& demands,
                     runner.trip.failure = "planner chose to charge where there is no station";
                     break;
                 }
-                const ServiceRecord record =
-                    runtime.admit(runner.at, demand.id, event.time, action.amount);
+                // The station, not the planner, decides what is delivered: ask the
+                // domain what this request actually leaves the agent with. Where it
+                // grants the request as made -- always, for an EV -- the planner's
+                // amount is used unchanged, so no rounding is introduced by asking.
+                const Resource requested = std::min(demand.capacity, runner.level + action.amount);
+                const Resource after =
+                    network_->domain().levelAfterService(runner.level, requested, demand.capacity);
+                const Resource delivered = after == requested ? action.amount : after - runner.level;
 
-                runner.level = std::min(demand.capacity, runner.level + action.amount);
-                const Dollars cost = action.amount * node.station->pricePerUnit;
-                runner.trip.stops.push_back(Stop{runner.at, action.amount, cost, record.wait(),
-                                                 record.service()});
+                const ServiceRecord record = runtime.admit(runner.at, demand.id, event.time, delivered);
+
+                runner.level = after;
+                const Dollars cost = delivered * node.station->pricePerUnit;
+                runner.trip.stops.push_back(Stop{runner.at, delivered, cost, record.wait(),
+                                                 record.service(), after});
                 runner.trip.energyCost += cost;
                 runner.trip.waitHours += record.wait();
                 runner.trip.serviceHours += record.service();

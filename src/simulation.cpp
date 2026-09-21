@@ -132,7 +132,7 @@ TripResult Allocator::runJourney(const Demand& demand, const Policy& policy, Sta
 
         state.enqueue(chosen->node);
         result.stops.push_back(Stop{chosen->node, chosen->amount, chosen->energyCost,
-                                   chosen->waitHours, chosen->serviceHours});
+                                   chosen->waitHours, chosen->serviceHours, chosen->levelAfter});
         result.energyCost += chosen->energyCost;
         result.waitHours += chosen->waitHours;
         result.serviceHours += chosen->serviceHours;
@@ -184,7 +184,7 @@ TripResult Allocator::runTopUp(const Demand& demand, const Policy& policy, Stati
 
     state.enqueue(chosen->node);
     result.stops.push_back(Stop{chosen->node, chosen->amount, chosen->energyCost,
-                               chosen->waitHours, chosen->serviceHours});
+                               chosen->waitHours, chosen->serviceHours, chosen->levelAfter});
     result.distanceKm = 2.0 * chosen->detourKm;
     result.travelCost = chosen->travelCost;
     result.energyCost = chosen->energyCost;

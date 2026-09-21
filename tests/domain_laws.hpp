@@ -71,6 +71,33 @@ inline void checkDomainLaws(const Domain& domain, PerDistance consumption, Rate 
         CHECK(h >= previous);
         previous = h;
     }
+
+    // Laws 7-10 concern what a stop delivers, for an agent of this capacity
+    // arriving at any level and asking for any higher one.
+    const Resource capacity = 60.0;
+    for (const double arriveFraction : {0.0, 0.1, 0.35, 0.8, 1.0}) {
+        const Resource arrival = capacity * arriveFraction;
+        for (const double askFraction : {0.0, 0.2, 0.5, 1.0}) {
+            const Resource requested = arrival + (capacity - arrival) * askFraction;
+            const Resource after = domain.levelAfterService(arrival, requested, capacity);
+            INFO("arrive " << arrival << ", ask " << requested << ", leave " << after);
+
+            // Law 7: service never takes resource away.
+            CHECK(after >= arrival);
+            // Law 8: service never overfills. Planners clamp requests to capacity
+            // and assume the result respects it.
+            CHECK(after <= capacity);
+            // Law 9: service never delivers less than was asked. Every planner
+            // plans its next leg from the level it requested; less than that is an
+            // agent that leaves unable to do what it stopped in order to do.
+            CHECK(after >= requested);
+            // Law 10: asking again for what you were given changes nothing. A
+            // planner asks for the level the domain told it it would get, and the
+            // simulator then applies the domain once more; the two agree only if
+            // service is idempotent.
+            CHECK(domain.levelAfterService(arrival, after, capacity) == after);
+        }
+    }
 }
 
 }  // namespace evnet::testing
