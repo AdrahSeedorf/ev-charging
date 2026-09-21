@@ -20,7 +20,8 @@ add_executable(evnet_tests
         test_simulation.cpp
         test_simulator.cpp
         test_siting.cpp
-        test_station_runtime.cpp)
+        test_station_runtime.cpp
+        test_truck.cpp)
 
 target_link_libraries(evnet_tests PRIVATE evnet_core Catch2::Catch2WithMain)
 

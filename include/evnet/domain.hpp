@@ -102,4 +102,56 @@ public:
 /// every network that uses it.
 std::shared_ptr<const Domain> electricVehicle();
 
+/// A solo heavy-vehicle driver under the Heavy Vehicle National Law's standard
+/// hours, which apply on the Hume in both NSW and Victoria: no more than 12
+/// hours' work in any 24 hours, with at least 7 continuous hours of stationary
+/// rest (NHVR, "Work and rest requirements").
+///
+///   resource   work hours left before a major rest is required; at most 12
+///   drains     while driving, one hour of work per hour at the wheel
+///   service    a 7-hour continuous rest, which restores all 12 hours however
+///              few were used -- the rest is mandated, not chosen
+///   admission  a full rest area turns the truck away: the bays ARE the servers
+///
+/// Deliberate simplifications, each stated so it can be argued with:
+///
+///   * The short breaks -- 15 minutes by 5.5 hours of work, 30 by 8, 60 by 11 --
+///     are not modelled. They would add a second and third clock that the
+///     engine's single resource cannot carry, and they also use rest-area bays,
+///     so this domain UNDERSTATES demand for parking. A shortage it finds is
+///     a lower bound.
+///   * Only driving counts as work. Loading, fuelling and paperwork also count
+///     under the law; a trip's starting level can account for work done before
+///     it enters the network.
+///
+/// Consumption: for a driver, "resource per km" is hours per km, which is a
+/// statement about SPEED -- and the simulator already has a speed. Were the two
+/// allowed to differ, a driver's clock would run at one speed while the truck
+/// drove at another. So this domain is built with the simulator's speed, and an
+/// agent's `consumption` is the fraction of its driving time that counts as
+/// work: 1 for any real driver.
+class HeavyVehicleStandardHours final : public Domain {
+public:
+    static constexpr Hours kMaxWorkHours = 12.0;
+    static constexpr Hours kMajorRestHours = 7.0;
+
+    explicit HeavyVehicleStandardHours(double speedKmh);
+
+    std::string name() const override { return "truck"; }
+    Resource resourceForDistance(Km distance, PerDistance consumption) const override;
+    Km distanceOnResource(Resource amount, PerDistance consumption) const override;
+    /// The rest takes seven hours whatever it restores; `rate` is meaningless.
+    Hours serviceDuration(Resource amount, Rate rate) const override;
+    /// A full rest area has nowhere to wait.
+    Admission admission() const override { return Admission::TurnAway; }
+    /// Rest at all and the clock comes back in full.
+    Resource levelAfterService(Resource levelOnArrival, Resource requestedLevel,
+                               Resource capacity) const override;
+
+    double speedKmh() const { return speedKmh_; }
+
+private:
+    double speedKmh_;
+};
+
 }  // namespace evnet

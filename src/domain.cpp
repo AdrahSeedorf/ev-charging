@@ -1,5 +1,7 @@
 #include "evnet/domain.hpp"
 
+#include <stdexcept>
+
 #include "evnet/units.hpp"
 
 namespace evnet {
@@ -19,6 +21,31 @@ Km ElectricVehicle::distanceOnResource(Resource amount, PerDistance consumption)
 
 Hours ElectricVehicle::serviceDuration(Resource amount, Rate rate) const {
     return chargeDuration(amount, rate);
+}
+
+HeavyVehicleStandardHours::HeavyVehicleStandardHours(double speedKmh) : speedKmh_(speedKmh) {
+    if (!(speedKmh > 0.0)) {
+        throw std::invalid_argument("truck domain: speed must be positive");
+    }
+}
+
+Resource HeavyVehicleStandardHours::resourceForDistance(Km distance, PerDistance consumption) const {
+    return drivingTime(distance, speedKmh_) * consumption;
+}
+
+Km HeavyVehicleStandardHours::distanceOnResource(Resource amount, PerDistance consumption) const {
+    // Same defensive meaning as the EV domain: no consumption, no range.
+    if (consumption <= 0.0) return 0.0;
+    return amount / consumption * speedKmh_;
+}
+
+Hours HeavyVehicleStandardHours::serviceDuration(Resource amount, Rate /*rate*/) const {
+    return amount > 0.0 ? kMajorRestHours : 0.0;
+}
+
+Resource HeavyVehicleStandardHours::levelAfterService(Resource levelOnArrival, Resource requestedLevel,
+                                                      Resource capacity) const {
+    return requestedLevel > levelOnArrival ? capacity : levelOnArrival;
 }
 
 std::shared_ptr<const Domain> electricVehicle() {
