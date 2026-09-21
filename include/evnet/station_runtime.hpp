@@ -27,8 +27,10 @@ struct ServiceRecord {
 /// This replaces StationState's timeless proxy, and it is the substance of stage
 /// 2. Stage 1 counted arrivals and never let them depart, so its "queue length"
 /// was really cumulative arrivals and its waits were an index rather than a
-/// duration -- which is why a 53-hour 95th percentile appeared in the stage 1
-/// results. Here a charger is occupied for a computed duration and then released.
+/// duration -- which is why, on the Hume corridor, stage 1 reports a 95th-
+/// percentile wait of 59.35h for the `cheapest` planner where this engine
+/// measures 0.12h (README, Finding 1). Here a charger is occupied for a computed
+/// duration and then released.
 ///
 /// DESIGN NOTE -- why there are no queue events.
 /// An agent wanting to charge is assigned the charger that frees up soonest, and
