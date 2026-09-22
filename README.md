@@ -352,6 +352,97 @@ up on a network dense and irregular enough to offer a bad greedy move at every n
   <img alt="227 OpenStreetMap charging stations across greater Sydney, coloured by peak charger load, with 11 candidate sites marked as hollow rings." src="docs/sydney-real-map-light.svg">
 </picture>
 
+### 9. A second domain: when rest areas fill, what strands a driver is how little slack it kept
+
+Stage 4 runs the same engine over a different kind of agent: a solo truck driver on the
+Hume under the Heavy Vehicle National Law's standard hours — at most 12 hours' work,
+restored only by a 7-hour rest — at the corridor's 40 southbound heavy-vehicle rest
+areas, taken from national open data. A full rest area has nowhere to wait, so it turns
+the truck away. The dataset, and everything estimated in it, is described in
+[`data/hume-trucks/PROVENANCE.md`](data/hume-trucks/PROVENANCE.md).
+
+At its assumed capacity, 300 drivers part-way through a shift:
+
+| planner | completed | stranded | turned away |
+|---|---|---|---|
+| `farthest` | 269 | **31** | 31 |
+| `cheapest` | 300 | 0 | 219 |
+| `min-wait` | 300 | 0 | 219 |
+| `generalised` | 300 | 0 | 219 |
+| `optimal` | 299 | 1 | 134 |
+
+Three things this shows, and one thing it does not.
+
+**The EV study's central disagreement disappears.** `cheapest`, `min-wait` and
+`generalised` are identical — here and at all 24 points of the sweep below. Rest areas
+are free, and a full one refuses rather than delays, so every wait is zero or infinite.
+There is no money-versus-time trade left to disagree about, only where to stop.
+
+**What strands a driver is the slack it arrives with.** `farthest` drives to the last
+rest area it can legally reach: its drivers arrive with a median of 0.15 hours in hand,
+89% of them with under half an hour, and it is stranded exactly once for every refusal.
+The others are refused far more often and strand almost no one, because they arrive with
+hours to spare — a median of 5.1 for `generalised`, 3.5 for `optimal`.
+
+**But the greedy planners are not being careful.** None of them models the risk of a
+full car park. `cheapest` and `generalised` score only the next leg, so a nearer rest
+area simply looks cheaper; `min-wait` sees nothing but zeros and falls back on its
+tie-break, which is the lowest node id — on this corridor, the site nearest Sydney.
+Their robustness is a by-product of how they score, not of anything they know. The one
+planner that reasons about the whole journey, `optimal`, is indifferent between rest
+areas that all cost the same, so it keeps less slack than they do.
+
+How much of this is the assumed capacity? The sweep scales every rest area's bays and
+reruns everything
+([`tools/truck_sweep.py`](tools/truck_sweep.py), [`data/truck-sweep.csv`](data/truck-sweep.csv)).
+Drivers stranded, out of 300:
+
+| bays | `farthest` | `generalised` | `optimal` |
+|---|---|---|---|
+| 70 (×0.25) | 160 | 81 | 54 |
+| 151 (×0.5) | 88 | 16 | 4 |
+| 254 (×0.75) | 43 | 0 | 1 |
+| **321 (×1)** | **31** | **0** | **1** |
+| 491 (×1.5) | 12 | 0 | 0 |
+| 642 (×2) | 2 | 0 | 0 |
+
+`farthest` strands the most at every one of the 24 capacity-and-fleet points. `optimal`
+is refused less often than `generalised` at all 24 — by between 8% and 94% — because it
+plans around what is already occupied, and it is far ahead when bays are short but not
+scarce (4 stranded against 16 at half capacity). Under the most severe shortages it
+strands slightly *more* (817 against 810 at a quarter capacity and 1,200 trucks): the
+same shape as Finding 3, though the mechanism here is not shown.
+
+**What it does not show** is how many bays the Hume is short of. The dataset records no
+capacity at all; the bays are assumed by site type, and only 115 of the 321 come from a
+published standard. Short breaks, which also use bays, are not modelled, so any
+shortage is a lower bound. The fleet is a scenario, not a traffic count. The result is
+the sensitivity, and the mechanism — not a number of bays.
+
+**One limitation this surfaced in the optimal planner.** Its single stranded driver
+reached the Goulburn Bypass rest area with 0.8 hours — 64 km — in hand, found it full,
+and reported no feasible plan, although five rest areas lay within reach, 10 to 46 km
+further on. The planner tracks resource on a 40-step grid and rounds each edge's cost
+*up* to a whole step, so short edges are overcharged: 0.8 hours floors to two steps of
+0.3, and the next two edges — 4.1 km to Goulburn itself, 6.4 km on to Run O Waters —
+cost a whole step each. On its grid, only the first of the five was reachable. That rounding was always there — the OpenStreetMap Sydney network's
+edges are shorter still, and it strands no one there — but after a refusal, with little
+slack, it can hide the next site. Refining the grid is not a clean fix: at steps of 0.3,
+0.1 and 0.03 hours it strands 1, 0 and 3 drivers, because a finer grid also lets an
+indifferent planner plan closer to its limit. A planner that valued slack would address
+both; that is future work.
+
+**What trucking needed from the engine** was exactly two additions to `Domain`, each
+an assumption the EV model had never stated: that a full station has somewhere to wait
+(`admission()`), and that an agent chooses how much service to take
+(`levelAfterService()`). The rest of the engine changed only to ask those two questions
+where they arise — candidates drop stations that would refuse, the optimal planner no
+longer insists on charging at a station that will turn it away, and the simulator counts
+turn-aways and applies what a station delivers. The seam is tested, not
+asserted: a domain that scales every cost by *k* must give bit-identical results to the
+EV domain on data rescaled by *k*, and a raw-physics bypass planted at each of the
+engine's fifteen physics call sites is caught.
+
 ## Data quality: what the raw inputs got wrong
 
 The legacy Sydney distance matrix had two defects, both silent:
@@ -612,17 +703,26 @@ vehicles occupy a charger for a duration and then release it.
       validator that catches impossible distances, rendered light/dark maps, and an
       OSM + OSRM ingestion pipeline that replaces the estimated figures with surveyed
       ones. 74 tests.
-- [ ] **Stage 4 — second domain.** Demonstrate the core is domain-agnostic.
+- [x] **Stage 4 — second domain.** A `Domain` interface behind every physics question,
+      with laws each domain must satisfy and a test that the engine asks it everywhere;
+      heavy-vehicle drivers under standard hours as the second domain, on the Hume's
+      real rest areas; datasets that name their own domain and columns. 105 tests.
 
 ## Beyond EVs
 
 The engine underneath is not about cars. It is about **agents traversing a
 network, competing for scarce capacity at nodes, trading money against time** —
 a shape that also fits ambulance station siting, clinic capacity planning, CDN
-edge placement and evacuation routing with shelter limits. Nothing in `Router`,
-`Policy`, `Allocator` or `Siting` mentions vehicles or electricity; the
-EV-specific parts are the unit conversions and the data schema. Stage 4 proves
-this by adding a second dataset from a different domain.
+edge placement and evacuation routing with shelter limits.
+
+Stage 4 tested that claim rather than repeating it. Every physics question the engine
+asks now goes through a `Domain` ([`domain.hpp`](include/evnet/domain.hpp)), and a
+second domain — truck drivers under fatigue law, resting at rest areas that turn them
+away when full — runs on the same planners, engines and siting unchanged
+([Finding 9](#9-a-second-domain-when-rest-areas-fill-what-strands-a-driver-is-how-little-slack-it-kept)).
+It needed two things the EV model had assumed without saying so: somewhere to wait at a
+full station, and a choice about how much service to take. Both are now questions the
+engine asks, not answers it assumes. A dataset names its domain in a `domain.txt`.
 
 ## Data provenance
 
