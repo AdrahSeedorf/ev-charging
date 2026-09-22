@@ -189,3 +189,66 @@ TEST_CASE("a rest area is not faulted for having no charging power", "[truck]") 
     CHECK(mentionsPower(ev.validate()));
     CHECK_FALSE(mentionsPower(truck_.validate()));
 }
+
+// ---------------------------------------------------------------------------
+// The shipped Hume heavy-vehicle dataset. These pin what PROVENANCE.md claims,
+// so the documentation and the data cannot drift apart unnoticed.
+// ---------------------------------------------------------------------------
+
+#include <fstream>
+
+namespace {
+
+const std::string kTrucks = std::string(EVNET_PROJECT_ROOT) + "/data/hume-trucks/";
+
+Network humeTrucks() {
+    Network n = Network::load(kTrucks + "nodes.csv", kTrucks + "edges.csv");
+    n.setDomain(truck());
+    return n;
+}
+
+}  // namespace
+
+TEST_CASE("the Hume truck dataset declares its domain and loads clean", "[truck][dataset]") {
+    std::ifstream manifest(kTrucks + "domain.txt");
+    std::string word;
+    manifest >> word;
+    CHECK(word == "truck");
+
+    const Network n = humeTrucks();
+    CHECK(n.validate().empty());
+    CHECK(n.stationNodes().size() == 40);
+
+    int bays = 0;
+    for (const NodeId id : n.stationNodes()) {
+        const Station& s = *n.node(id).station;
+        CHECK(s.servers > 0);
+        CHECK(s.pricePerUnit == 0.0);  // state-maintained rest areas do not charge
+        bays += s.servers;
+    }
+    CHECK(bays == 321);
+
+    // The corridor is the Hume's: 891 km, Sydney to Melbourne, end to end.
+    const Router router(n);
+    const NodeId sydney = n.findByName("Sydney");
+    const NodeId melbourne = n.findByName("Melbourne");
+    REQUIRE(sydney != kNoNode);
+    REQUIRE(melbourne != kNoNode);
+    CHECK_THAT(router.distance(sydney, melbourne), WithinAbs(891.0, 1e-6));
+}
+
+TEST_CASE("the Hume truck demands are drivers part-way through a shift, Sydney to Melbourne", "[truck][dataset]") {
+    const Network n = humeTrucks();
+    const auto demands = Demand::load(kTrucks + "demands.csv");
+    CHECK(demands.size() == 300);
+    for (const Demand& d : demands) {
+        CHECK(d.origin == n.findByName("Sydney"));
+        CHECK(d.destination == n.findByName("Melbourne"));
+        CHECK(d.capacity == HeavyVehicleStandardHours::kMaxWorkHours);
+        CHECK(d.consumption == kAllDrivingIsWork);
+        CHECK(d.level >= 3.0);                  // at most 9 of 12 hours already worked
+        CHECK(d.level <= d.capacity);
+        CHECK(d.releaseHour >= 0.0);
+        CHECK(d.releaseHour < 24.0);
+    }
+}

@@ -1,0 +1,55 @@
+# Hume corridor towns and the Sydney->Melbourne heavy-vehicle rest areas between
+# them. Bays are ASSUMED, not recorded -- see rest_areas.csv and PROVENANCE.md.
+id,name,has_station,price_per_unit,servers,rate_per_hour,latitude,longitude
+0,Sydney,0,0.00,0,0.0,-33.868800,151.209300
+1,Campbelltown,0,0.00,0,0.0,-34.065000,150.814000
+2,Partridge VC Rest Area Southbound,1,0.00,20,0.0,-34.152420,150.731348
+3,Mittagong,0,0.00,0,0.0,-34.450000,150.450000
+4,Sallys Cnr Service Centre Southbound,1,0.00,20,0.0,-34.555687,150.196351
+5,Sutton Forrest Rest Area Sorthbound,1,0.00,5,0.0,-34.559723,150.186664
+6,Marulan Service Centre Southbound,1,0.00,20,0.0,-34.653090,149.962585
+7,Goulburn Bypass Rest Area Southbound,1,0.00,5,0.0,-34.740072,149.753827
+8,Goulburn,0,0.00,0,0.0,-34.755000,149.718000
+9,Run O Waters Rest Area,1,0.00,5,0.0,-34.761283,149.658270
+10,Drews Truck Parking Bay,1,0.00,5,0.0,-34.763651,149.635761
+11,Mystery Boulders Truck Parking Bay Southbound,1,0.00,5,0.0,-34.774666,149.531061
+12,Windmills Truck Parking Bay Southbound,1,0.00,5,0.0,-34.789249,149.392437
+13,Lerida Creek Truck Parking Bay,1,0.00,5,0.0,-34.796833,149.320337
+14,Mundoonan Rest Area Southbound,1,0.00,20,0.0,-34.818957,149.110030
+15,Reardons Road Stopping Bay,1,0.00,2,0.0,-34.828219,149.021991
+16,Yass,0,0.00,0,0.0,-34.840000,148.910000
+17,McGarths One Tree Rest Area,1,0.00,5,0.0,-34.850773,148.871675
+18,Two Mile Rest Area,1,0.00,5,0.0,-34.869163,148.806254
+19,Conroys Gap Rest Area Southbound,1,0.00,5,0.0,-34.879780,148.768480
+20,Gowlands Stopping Bay,1,0.00,2,0.0,-34.923325,148.613571
+21,Reddy Creek Truck Parking Bay Southbound,1,0.00,5,0.0,-34.946352,148.531650
+22,Mungi Mungi Hill Rest Area,1,0.00,5,0.0,-35.019062,148.272982
+23,Coolac Rest Area,1,0.00,10,0.0,-35.035120,148.215856
+24,Mingay Rest Area,1,0.00,10,0.0,-35.050041,148.162774
+25,Four Mile Hill Truck Parking Bay,1,0.00,5,0.0,-35.060005,148.127328
+26,Gundagai,0,0.00,0,0.0,-35.066000,148.106000
+27,Big Ben Creek Rest Area Westbound,1,0.00,5,0.0,-35.107489,148.056075
+28,Tumblong Truck Parking Bay,1,0.00,5,0.0,-35.140238,148.016666
+29,Deltroit Truck Parking Bay Southbound,1,0.00,5,0.0,-35.238153,147.898841
+30,Keajura Rest Area Southbound,1,0.00,5,0.0,-35.391475,147.714344
+31,Kyeamba Gap East Rest Area,1,0.00,5,0.0,-35.510723,147.570848
+32,North Billabong Stopping Bay,1,0.00,2,0.0,-35.559312,147.512378
+33,Little Billabong Rest Area,1,0.00,10,0.0,-35.580699,147.486643
+34,Holbrook,0,0.00,0,0.0,-35.725000,147.313000
+35,Albury,0,0.00,0,0.0,-36.073700,146.913500
+36,CARS AND TRUCKS near Chiltern,1,0.00,10,0.0,-36.183985,146.680168
+37,CARS AND TRUCKS near Springhurst,1,0.00,10,0.0,-36.276458,146.484520
+38,CARS AND TRUCKS near North Wangaratta,1,0.00,10,0.0,-36.328982,146.373395
+39,Wangaratta,0,0.00,0,0.0,-36.358000,146.312000
+40,CARS AND TRUCKS near Wangaratta South,1,0.00,10,0.0,-36.395754,146.240900
+41,CARS AND TRUCKS near Winton,1,0.00,10,0.0,-36.478262,146.085516
+42,CARS AND TRUCKS near Benalla,1,0.00,10,0.0,-36.568990,145.914653
+43,Balmattum Rest Area,1,0.00,10,0.0,-36.702004,145.664154
+44,Euroa,0,0.00,0,0.0,-36.752000,145.570000
+45,CARS AND TRUCKS near Creightons Creek,1,0.00,10,0.0,-36.797850,145.529260
+46,TRUCK PARKING BAY near Locksley,1,0.00,5,0.0,-36.941091,145.401982
+47,Coach Road Rest Area,1,0.00,10,0.0,-37.015472,145.335891
+48,CARS AND TRUCKS near Wandong,1,0.00,10,0.0,-37.339250,145.048197
+49,Wallan,0,0.00,0,0.0,-37.416000,144.980000
+50,CARS AND TRUCKS near Beveridge,1,0.00,10,0.0,-37.497741,144.976526
+51,Melbourne,0,0.00,0,0.0,-37.813600,144.963100

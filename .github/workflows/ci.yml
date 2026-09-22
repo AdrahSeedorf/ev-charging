@@ -49,6 +49,10 @@ jobs:
       - name: Datasets regenerate reproducibly
         run: |
           python3 tools/build_datasets.py
+          # The truck network's second stage needs only the committed
+          # rest_areas.csv, so CI can rebuild it; the first stage needs the
+          # national file, which is not redistributed (see its PROVENANCE.md).
+          python3 tools/build_truck_network.py build
           git diff --exit-code -- data/ \
             || (echo "::error::Generated data differs from committed data" && exit 1)
 
@@ -83,3 +87,11 @@ jobs:
             --planner optimal --timeseries /tmp/load.csv --trips /tmp/trips.csv
           ./build/evnet site --network data/sydney --demands data/sydney/demands.csv --top 3
           test -s /tmp/load.csv && test -s /tmp/trips.csv
+
+      - name: Smoke-test the second domain
+        run: |
+          ./build/evnet inspect --network data/hume-trucks | grep -q "domain           truck"
+          ./build/evnet route --network data/hume-trucks --from Sydney --to Melbourne --level 4 \
+            | grep -q "Rest plan"
+          ./build/evnet compare --network data/hume-trucks --demands data/hume-trucks/demands.csv \
+            --format csv | head -1 | grep -q "turned_away"

@@ -1,0 +1,115 @@
+# Hume rows of the National Freight Data Hub's National Formal Rest Areas file,
+# with this study's decision on each. Derived subset; see PROVENANCE.md.
+source_id,name,state,road_name,locality,direction_of_travel,site_type,heavy_vehicle_area,latitude,longitude,included,reason_excluded,assumed_bays,bays_basis
+5555,Grass Tree,VIC,HUME FREEWAY,MANGALORE,NORTHBOUND,CARS AND TRUCKS,Y,-36.962688,145.180893,N,serves the other direction (NORTHBOUND),0,
+5556,Avenel Service Centre,VIC,HUME FREEWAY,AVENEL,NORTHBOUND,SERVICE CENTRE,N,-36.907597,145.239838,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+5557,TRUCK PARKING BAY near Euroa,VIC,HUME FREEWAY,EUROA,NORTHBOUND,TRUCK PARKING BAY,Y,-36.770611,145.526428,N,serves the other direction (NORTHBOUND),0,
+5558,Balmattum Rest Area,VIC,HUME FREEWAY,BALMATTUM,NORTHBOUND,CARS AND TRUCKS,Y,-36.713776,145.634628,N,serves the other direction (NORTHBOUND),0,
+5559,CARS AND TRUCKS near Violet Town,VIC,HUME FREEWAY,VIOLET TOWN,NORTHBOUND,CARS AND TRUCKS,Y,-36.619255,145.773529,N,serves the other direction (NORTHBOUND),0,
+5591,CARS AND TRUCKS near Benalla,VIC,HUME HIGHWAY,BENALLA,NORTHBOUND,CARS AND TRUCKS,Y,-36.575439,145.930069,N,serves the other direction (NORTHBOUND),0,
+5592,Mokoan Rest Area,VIC,HUME HIGHWAY,WINTON,NORTHBOUND,CARS AND TRUCKS,Y,-36.498077,146.107086,N,serves the other direction (NORTHBOUND),0,
+5593,Glenrowan Rest Area,VIC,HUME HIGHWAY,GLENROWAN,NORTHBOUND,CARS AND TRUCKS,Y,-36.448067,146.241821,N,serves the other direction (NORTHBOUND),0,
+5594,Glenrowan Service Centre,VIC,HUME HIGHWAY,WANGARATTA SOUTH,NORTHBOUND,SERVICE CENTRE,N,-36.438545,146.248657,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+5595,CARS AND TRUCKS near North Wangaratta,VIC,HUME HIGHWAY,NORTH WANGARATTA,NORTHBOUND,CARS AND TRUCKS,Y,-36.334286,146.375717,N,serves the other direction (NORTHBOUND),0,
+5596,CARS AND TRUCKS near Springhurst,VIC,HUME HIGHWAY,SPRINGHURST,NORTHBOUND,CARS AND TRUCKS,Y,-36.220146,146.445007,N,serves the other direction (NORTHBOUND),0,
+5597,Iron Bark Rest Area,VIC,HUME HIGHWAY,CHILTERN,NORTHBOUND,CARS AND TRUCKS,Y,-36.146519,146.638367,N,serves the other direction (NORTHBOUND),0,
+5636,CARS AND TRUCKS near Chiltern,VIC,HUME HIGHWAY,CHILTERN,SOUTHBOUND,CARS AND TRUCKS,Y,-36.137917,146.647675,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5637,CARS AND TRUCKS near Springhurst,VIC,HUME HIGHWAY,SPRINGHURST,SOUTHBOUND,CARS AND TRUCKS,Y,-36.221909,146.446045,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5638,CARS AND TRUCKS near North Wangaratta,VIC,HUME HIGHWAY,NORTH WANGARATTA,SOUTHBOUND,CARS AND TRUCKS,Y,-36.334221,146.377090,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5639,CARS AND TRUCKS near Wangaratta South,VIC,HUME HIGHWAY,WANGARATTA SOUTH,SOUTHBOUND,CARS AND TRUCKS,Y,-36.424030,146.263306,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5640,SERVICE CENTRE near Wangaratta South,VIC,HUME HIGHWAY,WANGARATTA SOUTH,SOUTHBOUND,SERVICE CENTRE,N,-36.440285,146.249390,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+5641,CARS AND TRUCKS near Winton,VIC,HUME HIGHWAY,WINTON,SOUTHBOUND,CARS AND TRUCKS,Y,-36.501286,146.103760,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5675,CARS AND TRUCKS near Benalla,VIC,HUME FREEWAY,BENALLA,SOUTHBOUND,CARS AND TRUCKS,Y,-36.577450,145.921356,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5676,Balmattum Rest Area,VIC,HUME FREEWAY,BALMATTUM,SOUTHBOUND,CARS AND TRUCKS,Y,-36.695919,145.659332,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5677,Euroa Service Centre,VIC,HUME FREEWAY,EUROA,SOUTHBOUND,SERVICE CENTRE,N,-36.743992,145.590927,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+5678,CARS AND TRUCKS near Creightons Creek,VIC,HUME FREEWAY,CREIGHTONS CREEK,SOUTHBOUND,CARS AND TRUCKS,Y,-36.781227,145.501343,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+5679,CARS ONLY near Locksley,VIC,HUME FREEWAY,LOCKSLEY,SOUTHBOUND,CARS ONLY,N,-36.851284,145.335846,N,type says cars only,0,
+5680,TRUCK PARKING BAY near Locksley,VIC,HUME FREEWAY,LOCKSLEY,SOUTHBOUND,TRUCK PARKING BAY,Y,-36.871975,145.285904,Y,,5,"estimate: a designed truck bay, sized as Austroads Class 5"
+5681,Coach Road Rest Area,VIC,HUME FREEWAY,AVENEL,SOUTHBOUND,CARS AND TRUCKS,Y,-36.942188,145.212814,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+7778,TRUCK PARKING BAY near Mickleham,VIC,HUME FREEWAY,MICKLEHAM,NORTHBOUND,TRUCK PARKING BAY,Y,-37.526031,144.947388,N,serves the other direction (NORTHBOUND),0,
+7779,CARS AND TRUCKS near Beveridge,VIC,HUME FREEWAY,BEVERIDGE,NORTHBOUND,CARS AND TRUCKS,Y,-37.496189,144.958374,N,serves the other direction (NORTHBOUND),0,
+7780,Beveridge Service Centre,VIC,HUME FREEWAY,WALLAN,NORTHBOUND,SERVICE CENTRE,N,-37.402607,145.014923,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+7781,CARS AND TRUCKS near Kilmore,VIC,HUME FREEWAY,KILMORE,NORTHBOUND,CARS AND TRUCKS,Y,-37.321545,145.036087,N,serves the other direction (NORTHBOUND),0,
+7782,Bradford WeighBridge,VIC,HUME FREEWAY,BROADFORD,NORTHBOUND,WEIGHBRIDGE,Y,-37.179969,145.068925,N,"a weighbridge, not a place to rest",0,
+7783,SERVICE CENTRE near Tallarook,VIC,HUME FREEWAY,TALLAROOK,NORTHBOUND,SERVICE CENTRE,N,-37.063690,145.100433,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+7787,SERVICE CENTRE near Tallarook,VIC,HUME FREEWAY,TALLAROOK,SOUTHBOUND,SERVICE CENTRE,N,-37.063522,145.101852,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+7788,CARS AND TRUCKS near Wandong,VIC,HUME FREEWAY,WANDONG,SOUTHBOUND,CARS AND TRUCKS,Y,-37.329006,145.030992,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+7789,SERVICE CENTRE near Wallan,VIC,HUME FREEWAY,WALLAN,SOUTHBOUND,SERVICE CENTRE,N,-37.403233,145.017181,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+7790,CARS AND TRUCKS near Beveridge,VIC,HUME FREEWAY,BEVERIDGE,SOUTHBOUND,CARS AND TRUCKS,Y,-37.497242,144.959000,Y,,10,estimate: Victoria has no classes; a general rest area sized as Class 3-4
+7935,SERVICE CENTRE near Kalkallo,VIC,HUME FREEWAY,KALKALLO,SOUTHBOUND,SERVICE CENTRE,N,-37.525367,144.948486,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+7936,SERVICE CENTRE near Epping,VIC,HUME FREEWAY,EPPING,SOUTHBOUND,SERVICE CENTRE,N,-37.647800,144.994217,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+7937,SERVICE CENTRE near Mickleham,VIC,HUME FREEWAY,MICKLEHAM,NORTHBOUND,SERVICE CENTRE,N,-37.541394,144.944220,N,type is silent about trucks and the heavy-vehicle flag is N,0,
+14343,Partridge VC Rest Area Southbound,NSW,HUME HIGHWAY,WOLLONDILLY,Southbound,Class 2 Heavy Vehicle Rest Area,Y,-34.157110,150.738750,Y,,20,Austroads AP-R591-19 Table 4.1 minimum
+14366,Pheasants Nest Service Centre Southbound,NSW,HUME HIGHWAY,WOLLONDILLY,Northbound,Service Centre,Y,-34.283420,150.641880,N,serves the other direction (Northbound),0,
+14390,Pheasants Nest Service Centre Northbound,NSW,HUME HIGHWAY,WOLLONDILLY,Northbound,Service Centre,Y,-34.283570,150.637040,N,serves the other direction (Northbound),0,
+14411,Yerrinbool Stopping Bay,NSW,HUME HIGHWAY,WINGECARRIBEE,Northbound,Green Reflector Sites,Y,-34.357360,150.541900,N,serves the other direction (Northbound),0,
+14433,Mackey VC Rest Area,NSW,HUME HIGHWAY,WINGECARRIBEE,Southbound,Light Vehicle Only Rest Area,Y,-34.579340,150.253420,N,type says light vehicles only (whatever the flag says),0,
+14455,Gordon VC Rest Area,NSW,HUME HIGHWAY,WINGECARRIBEE,Both Directions,Light Vehicle Only Rest Area,Y,-34.534980,150.281670,N,type says light vehicles only (whatever the flag says),0,
+14477,Sallys Cnr Service Centre Southbound,NSW,HUME HIGHWAY,WINGECARRIBEE,Westbound,Service Centre,Y,-34.606860,150.228170,Y,,20,"estimate: commercial roadhouse, sized as Austroads Class 1-2"
+14499,Sutton Forrest Rest Area Sorthbound,NSW,HUME HIGHWAY,WINGECARRIBEE,Westbound,Class 5 Heavy Vehicle Rest Area,Y,-34.613480,150.220090,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+14522,Sutton Forrest Stopping Bay Northbound,NSW,HUME HIGHWAY,WINGECARRIBEE,Eastbound,Informal Heavy Rest Areas,Y,-34.616860,150.214800,N,serves the other direction (Eastbound),0,
+16194,Sallys Cnr Service Centre Northbound,NSW,HUME HIGHWAY,WINGECARRIBEE,Eastbound,Service Centre,Y,-34.608200,150.226000,N,serves the other direction (Eastbound),0,
+16215,Logbook Hill Marulan Rest Area Northbound,NSW,HUME HIGHWAY,GOULBURN MULWAREE,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.691630,150.032070,N,serves the other direction (Eastbound),0,
+16237,Marulan Service Centre Southbound,NSW,S/B HUME HIGHWAY,GOULBURN MULWAREE,Westbound,Service Centre,Y,-34.717090,150.002380,Y,,20,"estimate: commercial roadhouse, sized as Austroads Class 1-2"
+16261,Marulan Service Centre Northbound,NSW,N/B HUME HIGHWAY,GOULBURN MULWAREE,Eastbound,Service Centre,Y,-34.719600,149.996400,N,serves the other direction (Eastbound),0,
+16284,Chowne VC Rest Area,NSW,HUME HIGHWAY,GOULBURN MULWAREE,Eastbound,Light Vehicle Only Rest Area,Y,-34.743650,149.886860,N,type says light vehicles only (whatever the flag says),0,
+16305,Derrick VC Rest Area,NSW,HUME HIGHWAY,GOULBURN MULWAREE,Northbound,Class 4 Heavy Vehicle Rest Area,Y,-34.736550,149.830120,N,serves the other direction (Northbound),0,
+16328,Goulburn Bypass Rest Area Southbound,NSW,HUME HIGHWAY,GOULBURN MULWAREE,Southbound,Class 5 Heavy Vehicle Rest Area,Y,-34.760710,149.766660,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+16349,Run O Waters Rest Area,NSW,HUME HIGHWAY,GOULBURN MULWAREE,Westbound,Class 5 Heavy Vehicle Rest Area,Y,-34.783640,149.661780,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+16371,Drews Truck Parking Bay,NSW,HUME HIGHWAY,GOULBURN MULWAREE,Westbound,Parking Area Heavy Rest Areas,Y,-34.787790,149.639550,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+16393,French VC Rest Area,NSW,HUME HWY N/BOUND,GOULBURN MULWAREE,Eastbound,Light Vehicle Only Rest Area,Y,-34.787080,149.640110,N,type says light vehicles only (whatever the flag says),0,
+16415,Mystery Boulders Truck Parking Bay Southbound,NSW,HUME HWY S/BOUND,GOULBURN MULWAREE,Westbound,Parking Area Heavy Rest Areas,Y,-34.807530,149.536220,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+16438,Mystery Boulders Rest Area Northbound,NSW,HUME HWY N/BOUND,GOULBURN MULWAREE,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.807030,149.538530,N,serves the other direction (Eastbound),0,
+16459,Breadbalbane Rest Area,NSW,HUME HWY S/BOUND,UPPER LACHLAN SHIRE,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.803390,149.494460,N,serves the other direction (Eastbound),0,
+16483,Windmills Truck Parking Bay Southbound,NSW,HUME HIGHWAY,UPPER LACHLAN SHIRE,Westbound,Parking Area Heavy Rest Areas,Y,-34.823090,149.397750,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+16505,Lerida Creek Truck Parking Bay,NSW,HUME HIGHWAY,UPPER LACHLAN SHIRE,Westbound,Parking Area Heavy Rest Areas,Y,-34.813350,149.322930,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+16527,Windmills Rest Area Northbound,NSW,HUME HIGHWAY,UPPER LACHLAN SHIRE,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.822480,149.399100,N,serves the other direction (Eastbound),0,
+16549,Mundoonan Rest Area Southbound,NSW,HUME HIGHWAY,UPPER LACHLAN SHIRE,Westbound,Class 1 Heavy Vehicle Rest Area,Y,-34.815900,149.109550,Y,,20,Austroads AP-R591-19 Table 4.1 minimum
+16572,Yass Valley Rest Area,NSW,HUME HIGHWAY,YASS VALLEY,Both Directions,Light Vehicle Only Rest Area,Y,-34.837290,149.013380,N,type says light vehicles only (whatever the flag says),0,
+16593,Mundoonan Rest Area Northbound,NSW,HUME HIGHWAY,UPPER LACHLAN SHIRE,Eastbound,Class 2 Heavy Vehicle Rest Area,Y,-34.824660,149.075230,N,serves the other direction (Eastbound),0,
+16616,Reardons Road Stopping Bay,NSW,HUME HIGHWAY,YASS VALLEY,Both Directions,Informal Heavy Rest Areas,Y,-34.835030,149.023060,Y,,2,"estimate: an informal pull-off, no design minimum exists"
+16637,Manton Ridge Rest Area,NSW,HUME HIGHWAY,YASS VALLEY,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.832070,148.985420,N,serves the other direction (Eastbound),0,
+16659,Derringullen Creek Rest Area,NSW,HUME HIGHWAY,YASS VALLEY,Westbound,Light Vehicle Only Rest Area,Y,-34.794360,148.868700,N,type says light vehicles only (whatever the flag says),0,
+16681,Bowning Stopping Bay Eastbound,NSW,HUME HIGHWAY,YASS VALLEY,Eastbound,Green Reflector Sites,Y,-34.789040,148.859100,N,serves the other direction (Eastbound),0,
+16727,McGarths One Tree Rest Area,NSW,HUME HIGHWAY,YASS VALLEY,Southbound,Class 5 Heavy Vehicle Rest Area,Y,-34.778670,148.841430,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+16749,Bookham Rest Area,NSW,HUME HIGHWAY,YASS VALLEY,Both Directions,Light Vehicle Only Rest Area,Y,-34.813300,148.641800,N,type says light vehicles only (whatever the flag says),0,
+16771,Gowlands Stopping Bay,NSW,HUME HIGHWAY,HILLTOPS,Westbound,Informal Heavy Rest Areas,Y,-34.805200,148.564020,Y,,2,"estimate: an informal pull-off, no design minimum exists"
+16793,Connors Creek Truck Parking Bay Northbound,NSW,HUME HIGHWAY,YASS VALLEY,Eastbound,Parking Area Heavy Rest Areas,Y,-34.810400,148.621570,N,serves the other direction (Eastbound),0,
+16815,Reddy Creek Truck Parking Bay Southbound,NSW,HUME HIGHWAY,HILLTOPS,Westbound,Parking Area Heavy Rest Areas,Y,-34.806320,148.472910,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+16837,Steam Engine Hill Truck Parking Bay Northbound,NSW,HUME HIGHWAY,HILLTOPS,Northbound,Parking Area Heavy Rest Areas,Y,-34.815930,148.435150,N,serves the other direction (Northbound),0,
+16859,Jugiong Hill Rest Area,NSW,HUME HIGHWAY,HILLTOPS,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.827870,148.312290,N,serves the other direction (Eastbound),0,
+16882,Big Ben Creek Rest Area Westbound,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Westbound,Other Rest Area,Y,-35.108380,148.057180,Y,,5,"estimate: type unstated, heavy vehicles flagged; sized as the smallest designed class"
+16903,Tumblong Truck Parking Bay,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Westbound,Parking Area Heavy Rest Areas,Y,-35.135290,148.010530,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+16927,Tumblong Rest Area,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Westbound,Light Vehicle Only Rest Area,Y,-35.136170,148.009280,N,type says light vehicles only (whatever the flag says),0,
+16949,Big Ben Creek Truck Parking Bay Eastbound,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Eastbound,Parking Area Heavy Rest Areas,Y,-35.109040,148.055110,N,serves the other direction (Eastbound),0,
+16972,Tumblong Parking Bay Northbound,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Northbound,Other Rest Area,Y,-35.121670,148.022930,N,serves the other direction (Northbound),0,
+16994,Yellow Creek Truck Parking Bay,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Eastbound,Parking Area Heavy Rest Areas,Y,-35.143020,147.962370,N,serves the other direction (Eastbound),0,
+17016,Deltroit Truck Parking Bay Southbound,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Westbound,Parking Area Heavy Rest Areas,Y,-35.179610,147.826240,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+17038,Wagga Hill Rest Area,NSW,HUME HIGHWAY,COOTAMUNDRA-GUNDAGAI REGIONAL,Northbound,Class 5 Heavy Vehicle Rest Area,Y,-35.209860,147.812760,N,serves the other direction (Northbound),0,
+17039,Goulburn Bypass Rest Area Northbound,NSW,OLD HUME HIGHWAY,GOULBURN MULWAREE,Eastbound,Informal Light Rest Areas,Y,-34.742080,149.766920,N,on the bypassed Old Hume Highway,0,
+17160,Two Mile Rest Area,NSW,HUME HIGHWAY,YASS VALLEY,Westbound,Class 5 Heavy Vehicle Rest Area,Y,-34.766550,148.763210,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+17161,Conroys Gap Rest Area Southbound,NSW,HUME HIGHWAY,YASS VALLEY,Westbound,Class 5 Heavy Vehicle Rest Area,Y,-34.776890,148.725320,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+17164,Conroys Gap Rest Area Northbound,NSW,HUME HIGHWAY,YASS VALLEY,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.775240,148.733930,N,serves the other direction (Eastbound),0,
+17200,Mungi Mungi Hill Rest Area,NSW,HUME HIGHWAY-NTH COOLAC INTERCHANGE,COOTAMUNDRA-GUNDAGAI REGIONAL,Westbound,Class 5 Heavy Vehicle Rest Area,Y,-34.888680,148.218290,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+17201,Black Springs Rest Area,NSW,HUME HIGHWAY-NTH COOLAC INTERCHANGE,COOTAMUNDRA-GUNDAGAI REGIONAL,Eastbound,Class 5 Heavy Vehicle Rest Area,Y,-34.881820,148.231440,N,serves the other direction (Eastbound),0,
+17204,Borella VC Rest Area,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Eastbound,Class 4 Heavy Vehicle Rest Area,Y,-35.915570,147.102230,N,serves the other direction (Eastbound),0,
+17208,South Gundagai Service Centre,NSW,HUME HIGHWAY-OFFLOAD RAMP-STH BND- MIDDLE ST (MR279),COOTAMUNDRA-GUNDAGAI REGIONAL,,Service Centre,Y,-35.081480,148.094610,N,no direction of travel recorded,0,
+17213,Glenburn Rest Area,NSW,HUME HIGHWAY,WAGGA WAGGA,Northbound,Class 5 Heavy Vehicle Rest Area,Y,-35.394360,147.659510,N,serves the other direction (Northbound),0,
+17217,Keajura Rest Area Southbound,NSW,HUME HIGHWAY,WAGGA WAGGA,Southbound,Class 5 Heavy Vehicle Rest Area,Y,-35.337300,147.647160,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+17220,Kilgowla Rest Area,NSW,HUME HIGHWAY,WAGGA WAGGA,Southbound,Light Vehicle Only Rest Area,Y,-35.353810,147.651800,N,type says light vehicles only (whatever the flag says),0,
+17221,Kyeamba Gap East Rest Area,NSW,HUME HIGHWAY,WAGGA WAGGA,Southbound,Class 5 Heavy Vehicle Rest Area,Y,-35.505580,147.564470,Y,,5,Austroads AP-R591-19 Table 4.1 minimum
+17224,North Billabong Stopping Bay,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Southbound,Informal Heavy Rest Areas,Y,-35.576320,147.533470,Y,,2,"estimate: an informal pull-off, no design minimum exists"
+17225,Kyeamba Gap Rest Area,NSW,HUME HIGHWAY,WAGGA WAGGA,Northbound,Class 4 Heavy Vehicle Rest Area,Y,-35.505820,147.564270,N,serves the other direction (Northbound),0,
+17228,Little Billabong Rest Area,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Both Directions,Class 4 Heavy Vehicle Rest Area,Y,-35.600090,147.510690,Y,,10,Austroads AP-R591-19 Table 4.1 minimum
+17229,Garryowen Rest Area,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Northbound,Class 5 Heavy Vehicle Rest Area,Y,-35.656750,147.435430,N,serves the other direction (Northbound),0,
+17232,Dog on the Tuckbox Service Centre,NSW,HUME HIGHWAY-STH COOLAC OFFLOAD,COOTAMUNDRA-GUNDAGAI REGIONAL,,Service Centre,Y,-35.003740,148.111790,N,no direction of travel recorded,0,
+17270,Mingay Rest Area,NSW,HUME HIGHWAY-STH COOLAC OFFLOAD,COOTAMUNDRA-GUNDAGAI REGIONAL,Both Directions,Class 3 Heavy Vehicle Rest Area,Y,-34.981280,148.133930,Y,,10,Austroads AP-R591-19 Table 4.1 minimum
+17271,Coolac Rest Area,NSW,HUME HIGHWAY-STH COOLAC INTERCHANGE,COOTAMUNDRA-GUNDAGAI REGIONAL,Southbound,Class 4 Heavy Vehicle Rest Area,Y,-34.940320,148.176090,Y,,10,Austroads AP-R591-19 Table 4.1 minimum
+17274,Four Mile Hill Truck Parking Bay,NSW,HUME HIGHWAY-NTH GUNDAGAI,COOTAMUNDRA-GUNDAGAI REGIONAL,Southbound,Parking Area Heavy Rest Areas,Y,-35.019340,148.110270,Y,,5,estimate: every such site is named a Truck Parking Bay; sized as Class 5
+17280,Keajura Truck Parking Bay Northbound,NSW,HUME HIGHWAY,WAGGA WAGGA,Eastbound,Parking Area Heavy Rest Areas,Y,-35.317020,147.659900,N,serves the other direction (Eastbound),0,
+17294,Blue Metal Rest Area,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Northbound,Class 3 Heavy Vehicle Rest Area,Y,-35.844470,147.197830,N,serves the other direction (Northbound),0,
+17295,Mullengandra Rest Area,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Northbound,Class 4 Heavy Vehicle Rest Area,Y,-35.893430,147.169530,N,serves the other direction (Northbound),0,
+17298,Four Mile Creek Rest Area,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Eastbound,Class 4 Heavy Vehicle Rest Area,Y,-35.839440,147.203100,N,serves the other direction (Eastbound),0,
+17299,Tarcutta Service Centre,NSW,HUME HWY-STH BND OFF LOAD-TARCUTTA INTERCHANGE,WAGGA WAGGA,,Service Centre,Y,-35.277490,147.735740,N,no direction of travel recorded,0,
+17312,Milton Rest Area,NSW,HUME HIGHWAY,GREATER HUME SHIRE,Eastbound,Class 4 Heavy Vehicle Rest Area,Y,-35.681800,147.362770,N,serves the other direction (Eastbound),0,
+17313,Holbrook Service Centre,NSW,HUME HIGHWAY,GREATER HUME SHIRE,,Service Centre,Y,-35.730600,147.308500,N,no direction of travel recorded,0,
